@@ -185,10 +185,5 @@ cython_debug/
 data/
 kaggleapi.txt
 models/*.pt
-data/
-.venv-gpu/
-__pycache__/
-models/*.pt
-data/
 .venv-gpu/
 __pycache__/
