@@ -1,0 +1,40 @@
+{
+  "test_samples": 4179,
+  "classification_report": {
+    "drowsy": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 2249.0
+    },
+    "non_drowsy": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 1930.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4179.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 4179.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      2249,
+      0
+    ],
+    [
+      0,
+      1930
+    ]
+  ]
+}
