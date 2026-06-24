@@ -23,7 +23,7 @@ except ImportError:
 
 try:
     import sounddevice as sd
-    import numpy as np as _np
+    import numpy as _np
     _HAS_SD = True
 except Exception:
     _HAS_SD = False
@@ -69,8 +69,8 @@ class AlertManager:
         self.on_alert     = on_alert
         self.beep         = beep
 
-        self._distract_start: Optional[float] = None  # when current distraction started
-        self._last_alert:     Optional[float] = None  # when last alert fired
+        self._distract_start: Optional[float] = None
+        self._last_alert:     Optional[float] = None
         self._current_label:  str = "attentive"
         self.last_event: Optional[AlertEvent] = None
 
@@ -86,7 +86,6 @@ class AlertManager:
             self._current_label  = label
             return None
 
-        # Start / reset distraction timer when label changes
         if label != self._current_label:
             self._distract_start = now
             self._current_label  = label
@@ -95,11 +94,9 @@ class AlertManager:
 
         sustained = now - self._distract_start
 
-        # Not yet sustained long enough
         if sustained < self.sustain_sec:
             return None
 
-        # In cooldown from last alert
         if self._last_alert and (now - self._last_alert) < self.cooldown_sec:
             return None
 
