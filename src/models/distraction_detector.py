@@ -20,10 +20,10 @@ from typing import Optional, Tuple
 
 
 # ─── Thresholds (degrees) ──────────────────────────────────────────────────────
-YAW_LEFT_THRESH   = -25
-YAW_RIGHT_THRESH  =  25
-PITCH_DOWN_THRESH =  20
-PITCH_UP_THRESH   = -20
+YAW_LEFT_THRESH   = -30
+YAW_RIGHT_THRESH  =  30
+PITCH_DOWN_THRESH =  25
+PITCH_UP_THRESH   = -25
 
 # ─── EAR thresholds ──────────────────────────────────────────────────────────
 EAR_THRESH        = 0.22   # below this → eye is closed
@@ -142,6 +142,10 @@ class DistractionDetector:
         pitch = float(euler[0][0])
         yaw   = float(euler[1][0])
         roll  = float(euler[2][0])
+
+        # Normalize to [-90, 90]
+        pitch = pitch - 180 if pitch > 90 else (pitch + 180 if pitch < -90 else pitch)
+        yaw   = yaw   - 180 if yaw   > 90 else (yaw   + 180 if yaw   < -90 else yaw)
 
         pose = HeadPose(yaw=yaw, pitch=pitch, roll=roll)
         label, confidence = self._classify(yaw, pitch)
