@@ -1,0 +1,26 @@
+{
+  "session_id": "20260624_094006",
+  "duration_sec": 47.1,
+  "total_frames": 1394,
+  "alert_count": 7,
+  "label_counts": {
+    "distracted_right": 46,
+    "distracted_left": 12,
+    "distracted_up": 772,
+    "attentive": 1,
+    "distracted_down": 422,
+    "drowsy": 94,
+    "no_face": 47
+  },
+  "label_pct": {
+    "distracted_right": 3.3,
+    "distracted_left": 0.9,
+    "distracted_up": 55.4,
+    "attentive": 0.1,
+    "distracted_down": 30.3,
+    "drowsy": 6.7,
+    "no_face": 3.4
+  },
+  "attentive_pct": 0.1,
+  "csv_path": "logs\\session_20260624_094006.csv"
+}

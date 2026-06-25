@@ -6,7 +6,8 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 from torchvision import datasets, transforms, models
 from pathlib import Path
 import json
-
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True   # ← add this line near the top
 # ─── Config ──────────────────────────────────────────────────────────────────
 DATA_ROOT   = Path("data/ddd")
 MODEL_DIR   = Path("models")
