@@ -35,7 +35,7 @@ class DrowsinessService:
             # Binary classification head: index 0 (non_drowsy), index 1 (drowsy)
             self.model.classifier[1] = torch.nn.Linear(num_ftrs, 2)
             
-            state_dict = torch.load(settings.DROWSINESS_MODEL_PATH, map_location=self.device)
+            state_dict = torch.load(settings.DROWSINESS_MODEL_PATH, map_location=self.device, weights_only=True)
             self.model.load_state_dict(state_dict)
             self.model.to(self.device)
             self.model.eval()
