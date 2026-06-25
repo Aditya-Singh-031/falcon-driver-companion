@@ -193,3 +193,5 @@ __pycache__/
 *.jpeg
 *.png
 *.mp4
+/.venv-backend
+/.venv-frontend
