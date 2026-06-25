@@ -107,7 +107,7 @@ with tab_live:
 
                         # Show frame in UI
                         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-                        frame_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+                        frame_placeholder.image(frame_rgb, channels="RGB")
 
                         # Encode as JPEG → base64
                         _, buf = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -221,7 +221,7 @@ with tab_logs:
     )
     fig_timeline.update_traces(marker=dict(size=4, opacity=0.7))
     fig_timeline.update_layout(showlegend=False, margin=dict(l=0, r=0, t=8, b=0))
-    st.plotly_chart(fig_timeline, use_container_width=True)
+    st.plotly_chart(fig_timeline, width='stretch')
 
     pose_df = df.dropna(subset=["yaw", "pitch", "roll"]) if all(c in df.columns for c in ["yaw","pitch","roll"]) else pd.DataFrame()
     if not pose_df.empty:
@@ -239,7 +239,7 @@ with tab_logs:
             font_color="#ccc",
             yaxis=dict(zeroline=True, zerolinecolor="#444"),
         )
-        st.plotly_chart(fig_ang, use_container_width=True)
+        st.plotly_chart(fig_ang, width='stretch')
 
     if "ear" in df.columns and df["ear"].notna().any():
         st.subheader("Eye Aspect Ratio (Drowsiness)")
@@ -256,7 +256,7 @@ with tab_logs:
             plot_bgcolor="#111", paper_bgcolor="#111",
             font_color="#ccc",
         )
-        st.plotly_chart(fig_ear, use_container_width=True)
+        st.plotly_chart(fig_ear, width='stretch')
 
     st.subheader("State Distribution")
     label_counts = df["label"].value_counts().reset_index()
@@ -266,7 +266,7 @@ with tab_logs:
         color="label", color_discrete_map=colour_map, height=320,
     )
     fig_pie.update_layout(margin=dict(l=0, r=0, t=8, b=0))
-    st.plotly_chart(fig_pie, use_container_width=True)
+    st.plotly_chart(fig_pie, width='stretch')
 
     with st.expander("Raw frame data"):
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df, width='stretch')
