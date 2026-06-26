@@ -1,43 +1,43 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './src/pages/**/*.{js,jsx}',
-    './src/components/**/*.{js,jsx}',
-    './src/app/**/*.{js,jsx}',
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        'neon-yellow':  '#D4F000',
-        'neon-cyan':    '#00F3FF',
-        'pitch-black':  '#050505',
-        'dark-charcoal':'#111111',
-        'ash':          '#AAAAAA',
-        'stark-white':  '#F0F0F0',
+        falcon: {
+          black: '#050505',
+          charcoal: '#111111',
+          surface: '#1a1a1a',
+          border: 'rgba(255,255,255,0.08)',
+          neon: '#D4F000',
+          cyan: '#00F3FF',
+          white: '#F5F5F5',
+          muted: '#888888',
+          faint: '#444444',
+        },
       },
       fontFamily: {
-        display: ['var(--font-display)', 'Impact', 'Arial Black', 'sans-serif'],
-        body:    ['var(--font-body)',    'Inter',  'system-ui',   'sans-serif'],
-        mono:    ['var(--font-mono)',    'JetBrains Mono', 'monospace'],
+        display: ['var(--font-display)', 'Impact', 'sans-serif'],
+        body: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
       },
-      animation: {
-        'hud-pulse':    'hudPulse 2s ease-in-out infinite',
-        'scanline':     'scanline 3s linear infinite',
-        'blink-dot':    'blinkDot 1.2s step-start infinite',
+      fontSize: {
+        '10vw': '10vw',
+        '12vw': '12vw',
+        '15vw': '15vw',
+        '18vw': '18vw',
+        '22vw': '22vw',
       },
-      keyframes: {
-        hudPulse: {
-          '0%,100%': { opacity: '0.6' },
-          '50%':     { opacity: '1' },
-        },
-        scanline: {
-          '0%':   { top: '-4px' },
-          '100%': { top: '100%' },
-        },
-        blinkDot: {
-          '0%,100%': { opacity: '1' },
-          '50%':     { opacity: '0' },
-        },
+      letterSpacing: {
+        tightest: '-0.05em',
+        widest: '0.3em',
+      },
+      transitionTimingFunction: {
+        expo: 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
     },
   },

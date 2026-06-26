@@ -1,9 +1,12 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Falcon — Edge AI Driver Companion',
-  description:
-    'Real-time drowsiness and distraction detection. Zero cloud latency. On-device inference.',
+  title: 'FALCON — Edge AI Driver Companion',
+  description: 'Real-time in-cabin drowsiness and distraction detection. Zero cloud latency.',
+  openGraph: {
+    title: 'FALCON — Edge AI Driver Companion',
+    description: 'Real-time in-cabin drowsiness and distraction detection. Zero cloud latency.',
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -13,15 +16,11 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body>
-        {/* Film grain texture */}
-        <div className="noise-overlay" aria-hidden="true" />
-        {children}
-      </body>
+      <body className="noise">{children}</body>
     </html>
   );
 }

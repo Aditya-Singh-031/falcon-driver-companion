@@ -1,15 +1,24 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Allow serving .glb from /public/models
-  webpack(config) {
+  reactStrictMode: true,
+  webpack: (config) => {
     config.module.rules.push({
       test: /\.(glb|gltf)$/,
       type: 'asset/resource',
     });
     return config;
   },
-  // Transpile three.js ecosystem
-  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei'],
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Cross-Origin-Embedder-Policy', value: 'require-corp' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
