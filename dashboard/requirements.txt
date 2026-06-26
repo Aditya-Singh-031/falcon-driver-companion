@@ -1,10 +1,10 @@
-# Falcon Dashboard — Python 3.9 compatible
-# Install with:  pip install -r dashboard/requirements.txt
+# Falcon Dashboard — Python 3.9+ compatible
+# Install with: pip install -r dashboard/requirements.txt
 
-streamlit>=1.35.0,<2.0.0
+streamlit>=1.35.0
+requests>=2.31.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+pillow>=10.0.0
 plotly>=5.18.0
-pandas>=1.4.0,<3.0.0
-numpy>=1.23.0,<2.0.0
-opencv-python-headless>=4.8.0
-Pillow>=9.0.0
-requests>=2.27.0
+pandas>=2.0.0
