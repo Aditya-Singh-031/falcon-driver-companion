@@ -1,6 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from routers import inference
 from services.drowsiness_service import drowsiness_service
 from services.distraction_service import distraction_service
@@ -19,6 +20,19 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down Falcon API...")
 
 app = FastAPI(title="Falcon Edge AI API", lifespan=lifespan)
+
+# --- NEW CORS MIDDLEWARE ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # Next.js Frontend
+        "http://localhost:8501"   # Streamlit Dashboard
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# ---------------------------
 
 app.include_router(inference.router)
 
