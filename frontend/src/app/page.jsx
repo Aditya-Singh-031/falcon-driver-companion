@@ -15,34 +15,35 @@ import Cursor from '@/components/Cursor';
 const HeroScene = dynamic(() => import('@/components/HeroScene'), { ssr: false });
 
 export default function Home() {
-  // Lenis smooth scroll init
+  // Lenis smooth scroll — uses new lenis package (not @studio-freight/lenis)
   useEffect(() => {
     let lenis;
+    let rafId;
+
     async function initLenis() {
-      const Lenis = (await import('@studio-freight/lenis')).default;
+      const { default: Lenis } = await import('lenis');
       lenis = new Lenis({
         duration: 1.4,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        direction: 'vertical',
-        gestureDirection: 'vertical',
-        smooth: true,
+        smoothWheel: true,
         smoothTouch: false,
         touchMultiplier: 2,
       });
 
       // GSAP ticker integration
-      async function connectGSAP() {
-        const { gsap } = await import('gsap');
-        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-        gsap.registerPlugin(ScrollTrigger);
-        gsap.ticker.add((time) => lenis.raf(time * 1000));
-        gsap.ticker.lagSmoothing(0);
-        lenis.on('scroll', ScrollTrigger.update);
-      }
-      connectGSAP();
+      const { gsap } = await import('gsap');
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      gsap.registerPlugin(ScrollTrigger);
+      gsap.ticker.add((time) => lenis.raf(time * 1000));
+      gsap.ticker.lagSmoothing(0);
+      lenis.on('scroll', ScrollTrigger.update);
     }
+
     initLenis();
-    return () => { if (lenis) lenis.destroy(); };
+    return () => {
+      if (lenis) lenis.destroy();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   return (
