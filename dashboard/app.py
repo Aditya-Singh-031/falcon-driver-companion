@@ -440,7 +440,7 @@ with dd_cols[0]:
         "468 facial landmarks. Sub-20ms inference. EAR threshold: 0.25. PERCLOS window: 60 frames.<br>"
         "Example state payload:" 
         "</p>"
-        f"<pre style='margin-top:0.6rem;font-size:0.8rem;background:#0b0b0b;border-radius:12px;padding:0.6rem 0.8rem;color:{TEXT_LIGHT};">"
+        f"<pre style='margin-top:0.6rem;font-size:0.8rem;background:#0b0b0b;border-radius:12px;padding:0.6rem 0.8rem;color:{TEXT_LIGHT};'>"
         "{\n  \"state\": \"DROWSY\",\n  \"ear\": 0.18,\n  \"alert\": true\n}"
         "</pre>"
         f"</div>",
@@ -456,7 +456,7 @@ with dd_cols[1]:
         "Context-aware 6-class output. GPU-optional. head_yaw: ±35°, gaze_off_road detection, phone presence.<br>"
         "Example state payload:"
         "</p>"
-        f"<pre style='margin-top:0.6rem;font-size:0.8rem;background:#0b0b0b;border-radius:12px;padding:0.6rem 0.8rem;color:{TEXT_LIGHT};">"
+        f"<pre style='margin-top:0.6rem;font-size:0.8rem;background:#0b0b0b;border-radius:12px;padding:0.6rem 0.8rem;color:{TEXT_LIGHT};'>"
         "{\n  \"state\": \"DISTRACTED\",\n  \"head_yaw\": 32.1,\n  \"phone_detected\": true\n}"
         "</pre>"
         f"</div>",
