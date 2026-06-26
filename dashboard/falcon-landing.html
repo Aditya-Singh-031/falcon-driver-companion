@@ -3,1242 +3,1456 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Falcon — Edge AI Driver Companion</title>
+  <title>FALCON — Edge AI Driver Companion</title>
 
   <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-  <!-- GSAP + ScrollTrigger + DrawSVG -->
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/DrawSVGPlugin.min.js"></script>
+  <!-- GSAP + Plugins -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/DrawSVGPlugin.min.js"></script>
 
   <!-- Lenis Smooth Scroll -->
-  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+  <script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 
   <style>
     /* ============================================================
-       ART DIRECTION: Falcon — Edge AI Driver Companion
-       Tone: Cinematic, high-tech, brutalist, F1-inspired
-       Palette: Pitch black bg, Cyber Neon #D4F000 accent, white text
-       Typography: Bebas Neue (display) + Space Grotesk (body)
-       Density: Spacious with tight technical sections
-       ============================================================ */
-
-    :root {
-      --bg:          #050505;
-      --surface:     #0d0d0d;
-      --surface-2:   #111111;
-      --border:      rgba(255,255,255,0.08);
-      --text:        #f0f0ee;
-      --text-muted:  #8a8a8a;
-      --text-faint:  #3a3a3a;
-      --accent:      #D4F000;
-      --accent-dim:  rgba(212,240,0,0.12);
-      --accent-glow: rgba(212,240,0,0.25);
-      --cyan:        #00F3FF;
-      --cyan-dim:    rgba(0,243,255,0.10);
-
-      --font-display: 'Bebas Neue', 'Impact', sans-serif;
-      --font-body:    'Space Grotesk', 'Inter', sans-serif;
-      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
-
-      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
-      --space-4: 1rem;    --space-6: 1.5rem; --space-8: 2rem;
-      --space-12: 3rem;   --space-16: 4rem;  --space-24: 6rem;
-
-      --radius-sm: 3px; --radius-md: 6px; --radius-lg: 12px;
-      --transition: 180ms cubic-bezier(0.16,1,0.3,1);
-    }
-
+       RESET & BASE
+    ============================================================ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html {
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-      scroll-behavior: auto;
-      background: var(--bg);
+    :root {
+      --black:   #050505;
+      --charcoal:#111111;
+      --white:   #F5F5F5;
+      --grey:    #888888;
+      --faint:   #333333;
+      --neon:    #D4F000;
+      --cyan:    #00F3FF;
+      --font-display: 'Bebas Neue', Impact, sans-serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
     }
 
+    html { scroll-behavior: auto; }
+
     body {
+      background: var(--black);
+      color: var(--white);
       font-family: var(--font-body);
-      font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
-      color: var(--text);
-      background: var(--bg);
+      font-size: 16px;
+      line-height: 1.6;
       overflow-x: hidden;
       cursor: none;
     }
 
-    /* ── Custom Cursor ── */
+    /* Custom cursor */
     #cursor {
-      position: fixed; top: 0; left: 0;
       width: 12px; height: 12px;
-      background: var(--accent);
+      background: var(--neon);
       border-radius: 50%;
+      position: fixed;
+      top: 0; left: 0;
       pointer-events: none;
       z-index: 9999;
-      transform: translate(-50%,-50%);
-      transition: transform 0.1s, width 0.2s var(--transition), height 0.2s var(--transition), background 0.2s;
+      transform: translate(-50%, -50%);
       mix-blend-mode: difference;
+      transition: width 0.2s, height 0.2s;
     }
     #cursor-ring {
-      position: fixed; top: 0; left: 0;
       width: 36px; height: 36px;
       border: 1px solid rgba(212,240,0,0.5);
       border-radius: 50%;
+      position: fixed;
+      top: 0; left: 0;
       pointer-events: none;
       z-index: 9998;
-      transform: translate(-50%,-50%);
-      transition: transform 0.15s cubic-bezier(0.16,1,0.3,1),
-                  width 0.3s, height 0.3s, border-color 0.3s;
+      transform: translate(-50%, -50%);
     }
 
-    ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--accent); }
+    /* ============================================================
+       PRELOADER
+    ============================================================ */
+    #preloader {
+      position: fixed; inset: 0;
+      background: var(--black);
+      z-index: 10000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .pre-logo {
+      font-family: var(--font-display);
+      font-size: clamp(5rem, 15vw, 14rem);
+      letter-spacing: 0.05em;
+      color: var(--white);
+      display: flex; gap: 0.06em;
+      overflow: hidden;
+    }
+    .pre-logo span { display: block; transform: translateY(120%); }
+    .pre-bar-wrap {
+      margin-top: 2rem;
+      width: clamp(200px, 30vw, 400px);
+      height: 2px;
+      background: var(--faint);
+      overflow: hidden;
+    }
+    .pre-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--neon);
+    }
+    .pre-counter {
+      margin-top: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      color: var(--grey);
+    }
+    .pre-panel {
+      position: absolute; inset: 0;
+      background: var(--black);
+      transform-origin: bottom;
+    }
 
-    /* ── NAV ── */
+    /* ============================================================
+       NAVBAR
+    ============================================================ */
     nav {
       position: fixed; top: 0; left: 0; right: 0;
-      z-index: 100;
-      padding: var(--space-6) var(--space-8);
-      display: flex; align-items: center; justify-content: space-between;
+      z-index: 1000;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.5rem 3rem;
+      mix-blend-mode: difference;
     }
-    nav::after {
-      content: '';
-      position: absolute; bottom: 0; left: var(--space-8); right: var(--space-8);
-      height: 1px;
-      background: var(--border);
-    }
-    .nav-logo { display: flex; align-items: center; gap: var(--space-3); text-decoration: none; }
-    .nav-logo-mark { width: 32px; height: 32px; }
-    .nav-logo-text {
+    .nav-logo {
       font-family: var(--font-display);
-      font-size: 1.4rem; letter-spacing: 0.1em; color: var(--accent);
+      font-size: 1.6rem;
+      letter-spacing: 0.1em;
+      color: var(--white);
+      text-decoration: none;
     }
-    .nav-links { display: flex; gap: var(--space-8); list-style: none; }
+    .nav-links {
+      display: flex; gap: 2.5rem; list-style: none;
+    }
     .nav-links a {
-      font-family: var(--font-mono); font-size: 0.7rem;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      color: var(--text-muted); text-decoration: none;
-      transition: color var(--transition);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--grey);
+      text-decoration: none;
+      transition: color 0.2s;
     }
-    .nav-links a:hover { color: var(--accent); }
-    .nav-status {
-      display: flex; align-items: center; gap: var(--space-2);
-      font-family: var(--font-mono); font-size: 0.65rem;
-      color: var(--text-muted); letter-spacing: 0.1em;
+    .nav-links a:hover { color: var(--neon); }
+    .nav-cta {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--black);
+      background: var(--neon);
+      padding: 0.6rem 1.4rem;
+      text-decoration: none;
+      transition: background 0.2s;
     }
-    .nav-status-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--accent); box-shadow: 0 0 8px var(--accent);
-      animation: pulse-dot 2s ease-in-out infinite;
-    }
-    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .nav-cta:hover { background: var(--cyan); }
 
+    /* ============================================================
+       SECTION SHARED
+    ============================================================ */
     section { position: relative; overflow: hidden; }
-    .label-tag {
-      display: inline-flex; align-items: center; gap: var(--space-2);
-      font-family: var(--font-mono); font-size: 0.65rem;
-      text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent);
-      padding: var(--space-1) var(--space-3);
-      border: 1px solid var(--accent-dim); border-radius: var(--radius-sm);
-      margin-bottom: var(--space-6);
+    .label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--grey);
+      margin-bottom: 1.5rem;
     }
-    .label-tag::before { content: '//'; opacity: 0.5; }
+    .label span { color: var(--neon); }
 
-    /* ════════════════════════════════════════
-       PRELOADER
-    ════════════════════════════════════════ */
-    #preloader {
-      position: fixed; inset: 0; z-index: 1000;
-      background: var(--bg);
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: var(--space-6);
+    /* ============================================================
+       A. HERO — AR OVERLAY
+    ============================================================ */
+    #hero {
+      height: 300vh;
     }
-    .preloader-text {
-      font-family: var(--font-display);
-      font-size: clamp(4rem, 15vw, 14rem);
-      line-height: 0.85; color: var(--text); overflow: hidden;
-    }
-    .preloader-text span { display: block; }
-    .preloader-sub {
-      font-family: var(--font-mono); font-size: 0.7rem;
-      letter-spacing: 0.3em; color: var(--text-muted); text-transform: uppercase;
-    }
-    .preloader-bar {
-      width: 200px; height: 1px; background: var(--text-faint);
-      position: relative; overflow: hidden;
-    }
-    .preloader-bar-fill {
-      position: absolute; left: 0; top: 0; height: 100%;
-      background: var(--accent); width: 0%;
-      box-shadow: 0 0 12px var(--accent);
-    }
-
-    /* ════════════════════════════════════════
-       HERO
-    ════════════════════════════════════════ */
-    #hero { height: 300vh; background: var(--bg); }
     .hero-sticky {
-      position: sticky; top: 0; height: 100vh; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
-    .hero-bg-word {
+
+    /* Background FALCON ghost text */
+    .hero-bg-text {
       position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero-bg-text span {
       font-family: var(--font-display);
-      font-size: clamp(18rem, 40vw, 55rem);
-      line-height: 1; color: transparent;
-      -webkit-text-stroke: 1px rgba(212,240,0,0.06);
-      letter-spacing: -0.02em; white-space: nowrap;
-      pointer-events: none; z-index: 0;
-      transform: translateX(-5%) translateY(5%);
+      font-size: clamp(10rem, 28vw, 28rem);
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255,255,255,0.04);
+      letter-spacing: -0.02em;
+      white-space: nowrap;
       will-change: transform;
     }
-    .hero-scene {
-      position: relative; z-index: 2;
-      width: 100%; height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .car-cabin {
+
+    /* Cabin shell */
+    .cabin {
       position: relative;
-      width: min(900px, 92vw); height: min(540px, 55vh);
-      border: 1px solid rgba(212,240,0,0.15); border-radius: 2px;
+      z-index: 2;
+      width: min(700px, 90vw);
+      aspect-ratio: 16/10;
+    }
+
+    /* Windshield frame */
+    .windshield {
+      width: 100%; height: 100%;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 4px;
+      background: radial-gradient(ellipse at 50% 30%, #1a1a1a 0%, #050505 70%);
+      position: relative;
       overflow: hidden;
-      background: radial-gradient(ellipse at 50% 30%, #1a1a0d 0%, #050505 70%);
     }
-    .car-cabin::before {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg,
-        transparent 0%, transparent 30%,
-        rgba(212,240,0,0.02) 31%, rgba(212,240,0,0.02) 32%,
-        transparent 33%, transparent 65%,
-        rgba(255,255,255,0.01) 66%, rgba(255,255,255,0.01) 67%,
-        transparent 68%);
-      pointer-events: none; z-index: 10;
+
+    /* Dashboard shelf at bottom */
+    .dash-shelf {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 28%;
+      background: linear-gradient(to top, #0a0a0a, transparent);
     }
-    .steering-wheel {
-      position: absolute; bottom: -40px; left: 50%;
+
+    /* Steering wheel SVG */
+    .steering {
+      position: absolute;
+      bottom: -8%;
+      left: 50%;
       transform: translateX(-50%);
-      width: 220px; height: 220px;
-      border: 3px solid rgba(255,255,255,0.12); border-radius: 50%; z-index: 5;
-    }
-    .steering-wheel::before, .steering-wheel::after {
-      content: ''; position: absolute; top: 50%; left: 50%;
-      background: rgba(255,255,255,0.08);
-    }
-    .steering-wheel::before { width: 3px; height: 80px; transform: translate(-50%,-90%); }
-    .steering-wheel::after { width: 80px; height: 3px; transform: translate(-90%,-50%); }
-    .sw-inner {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
-      width: 50px; height: 50px;
-      border: 2px solid rgba(255,255,255,0.1); border-radius: 50%;
-    }
-    .driver-figure {
-      position: absolute; bottom: 60px; left: 50%;
-      transform: translateX(-50%); z-index: 4;
-    }
-    .driver-head {
-      width: 70px; height: 80px;
-      background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
-      border-radius: 35px 35px 20px 20px;
-      margin: 0 auto; position: relative;
-    }
-    .driver-head::before {
-      content: ''; position: absolute; top: 15px; left: 10px; right: 10px; height: 20px;
-      background: rgba(0,243,255,0.15); border-radius: 10px;
-    }
-    .driver-helmet-visor {
-      position: absolute; bottom: 20px; left: 8px; right: 8px; height: 28px;
-      background: linear-gradient(180deg, rgba(0,243,255,0.3) 0%, rgba(0,0,0,0.8) 100%);
-      border-radius: 0 0 12px 12px;
-      border: 1px solid rgba(0,243,255,0.4);
-    }
-    .driver-body {
-      width: 160px; height: 120px;
-      background: linear-gradient(180deg, #1e1e1e 0%, #111 100%);
-      border-radius: 20px 20px 0 0;
-      margin: 0 auto;
-    }
-    .driver-shoulder-l, .driver-shoulder-r {
-      position: absolute; top: 0;
-      width: 40px; height: 30px;
-      background: #1a1a1a; border-radius: 8px;
-    }
-    .driver-shoulder-l { left: -10px; }
-    .driver-shoulder-r { right: -10px; }
-
-    /* Dashboard bottom bar */
-    .dashboard-bar {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
-      background: #0a0a0a;
-      border-top: 1px solid rgba(212,240,0,0.2); z-index: 5;
-      display: flex; align-items: center; justify-content: space-around;
-      padding: 0 var(--space-6);
-    }
-    .dash-gauge {
-      display: flex; flex-direction: column; align-items: center; gap: 2px;
-    }
-    .dash-gauge-label {
-      font-family: var(--font-mono); font-size: 0.5rem;
-      letter-spacing: 0.15em; color: var(--text-faint); text-transform: uppercase;
-    }
-    .dash-gauge-value {
-      font-family: var(--font-mono); font-size: 0.85rem;
-      color: var(--accent); font-weight: 700;
-    }
-    .dash-center {
-      font-family: var(--font-display); font-size: 1.6rem;
-      color: var(--accent); letter-spacing: 0.1em;
+      width: 38%;
+      opacity: 0.85;
     }
 
-    /* HUD AR overlay elements */
-    .hud-overlay {
-      position: absolute; inset: 0; z-index: 6; pointer-events: none;
+    /* Driver silhouette */
+    .driver-silhouette {
+      position: absolute;
+      bottom: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 55%;
     }
-    .hud-corner {
-      position: absolute; width: 24px; height: 24px;
+
+    /* HUD overlay layer */
+    .hud-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* Bounding box corners */
+    .bbox {
+      position: absolute;
+      top: 12%; left: 28%;
+      width: 44%; height: 52%;
+    }
+    .bbox-corner {
+      position: absolute;
+      width: 18px; height: 18px;
       opacity: 0;
     }
-    .hud-corner.tl { top: 20%; left: 35%; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
-    .hud-corner.tr { top: 20%; right: 35%; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); }
-    .hud-corner.bl { bottom: 35%; left: 35%; border-bottom: 2px solid var(--accent); border-left: 2px solid var(--accent); }
-    .hud-corner.br { bottom: 35%; right: 35%; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+    .bbox-corner::before,
+    .bbox-corner::after {
+      content: '';
+      position: absolute;
+      background: var(--neon);
+    }
+    .bbox-corner::before { width: 100%; height: 2px; top: 0; left: 0; }
+    .bbox-corner::after  { width: 2px; height: 100%; top: 0; left: 0; }
 
-    .hud-face-mesh {
-      position: absolute; top: 15%; left: 50%;
-      transform: translateX(-50%);
-      width: 120px; height: 140px; opacity: 0;
+    .bbox-corner.tl { top: 0; left: 0; }
+    .bbox-corner.tr { top: 0; right: 0; transform: rotate(90deg); }
+    .bbox-corner.bl { bottom: 0; left: 0; transform: rotate(-90deg); }
+    .bbox-corner.br { bottom: 0; right: 0; transform: rotate(180deg); }
+
+    /* Face mesh grid */
+    .face-mesh {
+      position: absolute;
+      top: 12%; left: 28%;
+      width: 44%; height: 52%;
+      opacity: 0;
     }
-    .hud-scanline {
-      position: absolute; left: 35%; right: 35%;
-      height: 1px; background: rgba(0,243,255,0.6);
-      box-shadow: 0 0 8px rgba(0,243,255,0.8);
-      top: 20%; opacity: 0;
-    }
-    .hud-data-left {
-      position: absolute; left: var(--space-4); top: 25%;
-      opacity: 0; transform: translateX(-20px);
-    }
-    .hud-data-right {
-      position: absolute; right: var(--space-4); top: 25%;
-      opacity: 0; transform: translateX(20px); text-align: right;
-    }
-    .hud-data-row {
-      font-family: var(--font-mono); font-size: 0.6rem;
-      letter-spacing: 0.1em; color: var(--accent);
+
+    /* Data panels */
+    .hud-panel {
+      position: absolute;
+      font-family: var(--font-mono);
+      font-size: clamp(0.55rem, 0.9vw, 0.7rem);
       line-height: 1.8;
+      color: var(--cyan);
+      opacity: 0;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(0,243,255,0.15);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      min-width: 130px;
     }
-    .hud-data-row .val { color: var(--cyan); }
+    .hud-panel.left  { top: 15%; left: 2%; transform: translateX(-20px); }
+    .hud-panel.right { top: 15%; right: 2%; transform: translateX(20px); }
+    .hud-panel .val  { color: var(--neon); font-weight: 500; }
 
-    /* Hero text overlays */
-    .hero-bottom-left {
-      position: absolute; bottom: var(--space-12); left: var(--space-8); z-index: 3;
+    /* Scanline */
+    .scanline {
+      position: absolute;
+      left: 28%; width: 44%;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--cyan), transparent);
+      top: 12%;
+      opacity: 0;
+      box-shadow: 0 0 12px var(--cyan);
     }
-    .hero-bottom-right {
-      position: absolute; bottom: var(--space-12); right: var(--space-8); z-index: 3; text-align: right;
+
+    /* Top-right HUD label */
+    .hud-status {
+      position: absolute;
+      top: 4%; right: 3%;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--neon);
+      opacity: 0;
     }
-    .hero-eyebrow {
-      font-family: var(--font-mono); font-size: 0.65rem;
-      letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted);
-      margin-bottom: var(--space-2);
+    .hud-status::before {
+      content: '● ';
+      animation: blink 1s step-end infinite;
     }
-    .hero-tagline {
-      font-family: var(--font-display);
-      font-size: clamp(2.5rem, 6vw, 5.5rem);
-      line-height: 0.9; color: var(--text);
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Side labels */
+    .hero-side-label {
+      position: absolute;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--grey);
+      writing-mode: vertical-rl;
     }
-    .hero-tagline .accent { color: var(--accent); }
-    .hero-scroll-hint {
-      position: absolute; bottom: var(--space-8); left: 50%;
+    .hero-side-label.left  { left: 2rem; bottom: 30%; }
+    .hero-side-label.right { right: 2rem; bottom: 30%; transform: rotate(180deg); }
+
+    /* Scroll hint */
+    .scroll-hint {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
       transform: translateX(-50%);
-      display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
-      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--grey);
+      text-transform: uppercase;
     }
-    .hero-scroll-hint span {
-      font-family: var(--font-mono); font-size: 0.6rem;
-      letter-spacing: 0.2em; color: var(--text-faint); text-transform: uppercase;
+    .scroll-hint-line {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, var(--neon), transparent);
+      animation: scrollpulse 1.5s ease-in-out infinite;
     }
-    .scroll-line {
-      width: 1px; height: 40px; background: var(--text-faint);
-      animation: scroll-line 2s ease-in-out infinite;
-    }
-    @keyframes scroll-line {
-      0%,100%{transform:scaleY(1);opacity:1}
-      50%{transform:scaleY(0.3);opacity:0.3}
+    @keyframes scrollpulse {
+      0%, 100% { transform: scaleY(1); opacity: 1; }
+      50% { transform: scaleY(0.4); opacity: 0.4; }
     }
 
-    /* ════════════════════════════════════════
-       SECTION B — KINETIC MANIFESTO
-    ════════════════════════════════════════ */
-    #manifesto {
-      min-height: 100vh; padding: clamp(5rem,12vw,12rem) var(--space-8);
-      display: flex; align-items: center;
-      background: var(--bg);
-      border-top: 1px solid var(--border);
+    /* ============================================================
+       B. MISSION STATEMENT
+    ============================================================ */
+    #mission {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(4rem, 8vw, 10rem) clamp(2rem, 6vw, 8rem);
+      background: var(--black);
     }
-    .manifesto-inner { max-width: 1400px; margin: 0 auto; }
-    .manifesto-lines { list-style: none; }
-    .manifesto-line {
+    .mission-words {
       font-family: var(--font-display);
-      font-size: clamp(2.8rem, 7.5vw, 9rem);
-      line-height: 0.95;
-      letter-spacing: -0.01em;
-      display: flex; flex-wrap: wrap; gap: 0.25em;
-      margin-bottom: 0.1em;
+      font-size: clamp(3.5rem, 8vw, 9rem);
+      line-height: 1.02;
+      letter-spacing: 0.01em;
+      max-width: 1400px;
     }
-    .manifesto-word {
-      color: #2a2a2a;
-      transition: color 0.15s;
+    .mission-words .word {
       display: inline-block;
+      color: #2a2a2a;
+      margin-right: 0.25em;
+      transition: none;
     }
-    .manifesto-word.lit { color: var(--text); }
-    .manifesto-word.blazing { color: var(--accent); text-shadow: 0 0 40px rgba(212,240,0,0.4); }
+    .mission-words .word.lit { color: var(--white); }
+    .mission-words .word.neon { color: var(--neon); }
+    .mission-divider {
+      display: block;
+      font-size: clamp(2rem, 4.5vw, 5rem);
+      color: #222;
+      margin-top: 0.3em;
+    }
+    .mission-sub {
+      margin-top: 3rem;
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--grey);
+      font-family: var(--font-mono);
+    }
 
-    /* ════════════════════════════════════════
-       SECTION C — DROWSINESS vs DISTRACTION
-    ════════════════════════════════════════ */
+    /* ============================================================
+       C. DROWSINESS VS DISTRACTION
+    ============================================================ */
     #detection {
-      min-height: 100vh; padding: clamp(5rem,10vw,10rem) var(--space-8);
-      background: var(--surface);
-      border-top: 1px solid var(--border);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(4rem, 8vw, 10rem) clamp(2rem, 6vw, 8rem);
+      background: var(--charcoal);
     }
-    .detection-header {
-      font-family: var(--font-mono); font-size: 0.65rem;
-      letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase;
-      margin-bottom: var(--space-12);
+    .detection-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      margin-top: 3rem;
     }
-    .detection-split {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
-      min-height: 60vh;
+    .detect-block {
+      position: relative;
+      padding: clamp(2.5rem, 5vw, 5rem);
+      background: var(--black);
+      cursor: pointer;
+      overflow: hidden;
+      min-height: clamp(320px, 45vh, 520px);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      transition: flex 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .detection-block {
-      position: relative; overflow: hidden;
-      padding: var(--space-12) var(--space-8);
-      background: var(--bg);
-      cursor: none;
-      transition: flex 0.6s cubic-bezier(0.16,1,0.3,1);
-    }
-    .detection-block::after {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(circle at 50% 50%, var(--accent-dim) 0%, transparent 70%);
+    .detect-block::before {
+      content: '';
+      position: absolute;
+      inset: 0;
       opacity: 0;
       transition: opacity 0.5s;
     }
-    .detection-block:hover::after { opacity: 1; }
-    .detection-block-title {
-      font-family: var(--font-display);
-      font-size: clamp(4rem, 10vw, 13rem);
-      line-height: 0.85; color: var(--text-faint);
-      transition: color 0.4s; letter-spacing: -0.02em;
-      position: relative; z-index: 2;
+    .detect-block.drowsy::before {
+      background: radial-gradient(ellipse at 50% 100%, rgba(212,240,0,0.06) 0%, transparent 70%);
     }
-    .detection-block:hover .detection-block-title { color: var(--accent); }
+    .detect-block.distract::before {
+      background: radial-gradient(ellipse at 50% 100%, rgba(0,243,255,0.06) 0%, transparent 70%);
+    }
+    .detect-block:hover::before { opacity: 1; }
 
-    .detection-tech-cards {
-      position: absolute; bottom: var(--space-8); right: var(--space-6);
-      display: flex; flex-direction: column; gap: var(--space-3);
-      opacity: 0; transform: translateY(20px);
-      transition: opacity 0.4s, transform 0.4s;
-      z-index: 3;
-    }
-    .detection-block:hover .detection-tech-cards { opacity: 1; transform: translateY(0); }
-    .tech-mini-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border); border-radius: var(--radius-md);
-      padding: var(--space-3) var(--space-4);
-      font-family: var(--font-mono); font-size: 0.6rem;
-      color: var(--text-muted); line-height: 1.6;
-      backdrop-filter: blur(10px);
-    }
-    .tech-mini-card .highlight { color: var(--accent); }
-    .detection-block-sub {
-      font-size: 0.85rem; color: var(--text-muted);
-      margin-top: var(--space-4); max-width: 30ch;
-      position: relative; z-index: 2;
-    }
-    .detection-dim .detection-block-title { color: var(--text-faint) !important; }
-
-    /* ════════════════════════════════════════
-       SECTION D — HORIZONTAL TECH SHOWCASE
-    ════════════════════════════════════════ */
-    #tech-showcase { background: var(--bg); border-top: 1px solid var(--border); }
-    .tech-showcase-sticky {
-      position: sticky; top: 0; height: 100vh; overflow: hidden;
-      display: flex; align-items: center;
-    }
-    .tech-showcase-track {
-      display: flex; gap: var(--space-6);
-      padding: 0 var(--space-8);
-      will-change: transform;
-    }
-    .tech-card {
-      flex-shrink: 0;
-      width: 360px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-8);
-      backdrop-filter: blur(20px);
-      position: relative; overflow: hidden;
-      transition: border-color 0.3s, box-shadow 0.3s;
-      will-change: transform;
-    }
-    .tech-card:hover {
-      border-color: rgba(212,240,0,0.3);
-      box-shadow: 0 0 40px rgba(212,240,0,0.05);
-    }
-    .tech-card::before {
-      content: ''; position: absolute;
-      top: -50%; left: -50%; width: 200%; height: 200%;
-      background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(212,240,0,0.04) 0%, transparent 50%);
-      pointer-events: none;
-    }
-    .tech-card-number {
-      font-family: var(--font-mono); font-size: 0.6rem;
-      color: var(--text-faint); letter-spacing: 0.2em;
-      margin-bottom: var(--space-6);
-    }
-    .tech-card-icon {
-      width: 48px; height: 48px; margin-bottom: var(--space-4);
-      color: var(--accent);
-    }
-    .tech-card-title {
+    .detect-label {
       font-family: var(--font-display);
-      font-size: clamp(1.8rem, 3vw, 2.8rem);
-      color: var(--text); margin-bottom: var(--space-3);
+      font-size: clamp(3.5rem, 7vw, 8rem);
+      line-height: 0.95;
+      letter-spacing: 0.02em;
+      color: rgba(255,255,255,0.15);
+      transition: color 0.5s;
+      position: relative;
+      z-index: 1;
+    }
+    .detect-block:hover .detect-label { color: var(--white); }
+    .detect-block.drowsy:hover .detect-label { color: var(--neon); }
+    .detect-block.distract:hover .detect-label { color: var(--cyan); }
+
+    .detect-desc {
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--grey);
+      max-width: 36ch;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Tech cards that float in on hover */
+    .detect-tech {
+      position: absolute;
+      top: 1.5rem; right: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.4s 0.1s, transform 0.4s 0.1s;
+      z-index: 2;
+    }
+    .detect-block:hover .detect-tech {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .tech-chip {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      padding: 0.4rem 0.75rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+    }
+    .tech-chip .k { color: var(--grey); }
+    .tech-chip .v { color: var(--neon); }
+    .detect-block.distract .tech-chip .v { color: var(--cyan); }
+
+    /* dim sibling on hover */
+    .detection-grid:has(.detect-block.drowsy:hover) .detect-block.distract,
+    .detection-grid:has(.detect-block.distract:hover) .detect-block.drowsy {
+      opacity: 0.35;
+    }
+
+    /* ============================================================
+       D. HORIZONTAL TECH SHOWCASE
+    ============================================================ */
+    #tech-showcase {
+      height: 500vh;
+    }
+    .tech-sticky {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .tech-header {
+      padding: 0 clamp(2rem, 6vw, 8rem);
+      margin-bottom: 2.5rem;
+    }
+    .tech-header h2 {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 5vw, 5rem);
       letter-spacing: 0.05em;
     }
-    .tech-card-subtitle {
-      font-family: var(--font-mono); font-size: 0.65rem;
-      color: var(--accent); letter-spacing: 0.15em;
-      text-transform: uppercase; margin-bottom: var(--space-4);
+    .tech-track-wrap {
+      padding-left: clamp(2rem, 6vw, 8rem);
+      overflow: visible;
     }
-    .tech-card-body {
-      font-size: 0.85rem; color: var(--text-muted);
-      line-height: 1.7; margin-bottom: var(--space-6);
-    }
-    .tech-card-metric {
-      display: flex; justify-content: space-between;
-      border-top: 1px solid var(--border); padding-top: var(--space-4);
-    }
-    .metric-item { display: flex; flex-direction: column; gap: 2px; }
-    .metric-label {
-      font-family: var(--font-mono); font-size: 0.55rem;
-      color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.15em;
-    }
-    .metric-value {
-      font-family: var(--font-mono); font-size: 1rem;
-      color: var(--accent); font-weight: 700;
+    .tech-track {
+      display: flex;
+      gap: 1.5rem;
+      will-change: transform;
     }
 
-    /* ════════════════════════════════════════
-       SECTION E — CIRCUIT SIGNATURE
-    ════════════════════════════════════════ */
-    #circuit {
-      min-height: 100vh; padding: clamp(5rem,10vw,12rem) var(--space-8);
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
+    /* Glassmorphic card */
+    .tech-card {
+      flex: 0 0 clamp(280px, 30vw, 380px);
+      padding: clamp(1.5rem, 3vw, 2.5rem);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(16px);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+      will-change: transform;
+    }
+    .tech-card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background: linear-gradient(135deg, rgba(212,240,0,0.06) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .tech-card:hover::before { opacity: 1; }
+    .tech-card:hover { border-color: rgba(212,240,0,0.2); }
+
+    .tc-index {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--grey);
+      margin-bottom: 1.5rem;
+    }
+    .tc-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      letter-spacing: 0.05em;
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+    .tc-sub {
+      font-size: 0.8rem;
+      color: var(--grey);
+      margin-bottom: 1.5rem;
+    }
+    .tc-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .tc-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+    }
+    .tc-stat .key { color: var(--grey); letter-spacing: 0.1em; }
+    .tc-stat .val { color: var(--neon); font-weight: 500; }
+    .tc-bar {
+      margin-top: 1.5rem;
+      height: 2px;
+      background: var(--faint);
+      position: relative;
+      overflow: hidden;
+    }
+    .tc-bar-fill {
+      height: 100%;
+      background: var(--neon);
+      width: 0%;
+      transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tc-accent {
+      position: absolute;
+      top: 1.5rem; right: 1.5rem;
+      width: 40px; height: 40px;
+      opacity: 0.15;
+    }
+
+    /* ============================================================
+       E. CIRCUIT SIGNATURE
+    ============================================================ */
+    #signature {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(4rem, 8vw, 10rem) clamp(2rem, 6vw, 8rem);
+      background: var(--black);
+      text-align: center;
     }
     .circuit-svg-wrap {
-      width: min(700px, 90vw); margin: 0 auto var(--space-16);
+      width: min(700px, 90vw);
+      margin-bottom: 4rem;
     }
-    .circuit-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; }
-    .circuit-node {
-      opacity: 0;
-      transform-origin: center;
-    }
-    .circuit-bottom {
-      text-align: center; max-width: 800px; margin: 0 auto;
-    }
-    .circuit-tagline {
+    .circuit-svg-wrap svg { width: 100%; height: auto; }
+
+    .sig-headline {
       font-family: var(--font-display);
-      font-size: clamp(3rem, 7vw, 8rem);
-      line-height: 0.9; color: var(--text);
-      margin-bottom: var(--space-8);
+      font-size: clamp(3rem, 7vw, 7rem);
+      letter-spacing: 0.05em;
+      line-height: 1;
+      margin-bottom: 1.5rem;
     }
-    .circuit-tagline .neon { color: var(--accent); }
-    .circuit-sub {
-      font-size: 0.9rem; color: var(--text-muted);
-      line-height: 1.8; max-width: 50ch; margin: 0 auto var(--space-12);
+    .sig-headline .neon { color: var(--neon); }
+    .sig-sub {
+      font-size: 0.85rem;
+      color: var(--grey);
+      letter-spacing: 0.1em;
+      margin-bottom: 3rem;
+      max-width: 50ch;
     }
-    .btn-row { display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap; }
+    .sig-ctas {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
     .btn-primary {
-      font-family: var(--font-mono); font-size: 0.75rem;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      padding: var(--space-4) var(--space-8);
-      background: var(--accent); color: #050505;
-      border: none; border-radius: var(--radius-sm);
-      cursor: none; text-decoration: none;
-      transition: background 0.2s, box-shadow 0.2s;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--black);
+      background: var(--neon);
+      padding: 1rem 2.5rem;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      display: inline-block;
     }
-    .btn-primary:hover {
-      background: #c8e400;
-      box-shadow: 0 0 24px rgba(212,240,0,0.4);
-    }
+    .btn-primary:hover { background: var(--cyan); transform: translateY(-2px); }
     .btn-ghost {
-      font-family: var(--font-mono); font-size: 0.75rem;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      padding: var(--space-4) var(--space-8);
-      background: transparent; color: var(--text);
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      cursor: none; text-decoration: none;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--white);
+      background: transparent;
+      padding: 1rem 2.5rem;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      cursor: pointer;
       transition: border-color 0.2s, color 0.2s;
+      display: inline-block;
     }
-    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-ghost:hover { border-color: var(--neon); color: var(--neon); }
 
-    /* ── Footer ── */
+    /* ============================================================
+       FOOTER
+    ============================================================ */
     footer {
-      padding: var(--space-8);
-      border-top: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center;
-      font-family: var(--font-mono); font-size: 0.6rem;
-      color: var(--text-faint); letter-spacing: 0.1em;
+      padding: 2rem clamp(2rem, 6vw, 8rem);
+      border-top: 1px solid var(--faint);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      background: var(--black);
+    }
+    footer span {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      color: var(--grey);
+    }
+    footer .f-neon { color: var(--neon); }
+
+    /* ============================================================
+       NOISE OVERLAY
+    ============================================================ */
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9997;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 256px;
     }
 
-    /* ── Noise overlay ── */
-    body::after {
-      content: ''; position: fixed; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-      pointer-events: none; z-index: 9997; opacity: 0.4;
-    }
-
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
     @media (max-width: 768px) {
+      nav { padding: 1.2rem 1.5rem; }
       .nav-links { display: none; }
-      .detection-split { grid-template-columns: 1fr; }
-      .hero-bottom-right { display: none; }
-      .car-cabin { height: min(300px, 45vh); }
+      .detection-grid { grid-template-columns: 1fr; }
+      .hero-side-label { display: none; }
+      .hud-panel { display: none; }
       body { cursor: auto; }
       #cursor, #cursor-ring { display: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
+      * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Custom cursor -->
-  <div id="cursor" aria-hidden="true"></div>
-  <div id="cursor-ring" aria-hidden="true"></div>
+<!-- Noise grain -->
+<div class="noise" aria-hidden="true"></div>
 
-  <!-- ── PRELOADER ── -->
-  <div id="preloader" role="status" aria-label="Loading Falcon">
-    <div class="preloader-text">
-      <span id="pl-fal">FAL</span>
-      <span id="pl-con" style="color:var(--accent)">CON</span>
+<!-- Custom cursor -->
+<div id="cursor" aria-hidden="true"></div>
+<div id="cursor-ring" aria-hidden="true"></div>
+
+<!-- ============================================================
+     PRELOADER
+============================================================ -->
+<div id="preloader" role="status" aria-label="Loading Falcon">
+  <div class="pre-logo">
+    <span>F</span><span>A</span><span>L</span><span>C</span><span>O</span><span>N</span>
+  </div>
+  <div class="pre-bar-wrap">
+    <div class="pre-bar" id="preBar"></div>
+  </div>
+  <div class="pre-counter" id="preCounter">000</div>
+  <div class="pre-panel" id="prePanel"></div>
+</div>
+
+<!-- ============================================================
+     NAVIGATION
+============================================================ -->
+<nav aria-label="Main navigation">
+  <a href="#" class="nav-logo" aria-label="Falcon home">FALCON</a>
+  <ul class="nav-links" role="list">
+    <li><a href="#hero">Overview</a></li>
+    <li><a href="#mission">Mission</a></li>
+    <li><a href="#detection">Modules</a></li>
+    <li><a href="#tech-showcase">Stack</a></li>
+  </ul>
+  <a href="http://localhost:8501" class="nav-cta" target="_blank" rel="noopener noreferrer">Launch Dashboard</a>
+</nav>
+
+<!-- ============================================================
+     A. HERO — AR OVERLAY
+============================================================ -->
+<section id="hero" aria-label="Hero">
+  <div class="hero-sticky">
+
+    <!-- Background parallax text -->
+    <div class="hero-bg-text" aria-hidden="true">
+      <span id="heroBgText">FALCON</span>
     </div>
-    <div class="preloader-sub">INITIALIZING EDGE AI SYSTEMS</div>
-    <div class="preloader-bar"><div class="preloader-bar-fill" id="pl-bar"></div></div>
+
+    <!-- Side labels -->
+    <span class="hero-side-label left" aria-hidden="true">EDGE AI · IN-CABIN · REAL-TIME</span>
+    <span class="hero-side-label right" aria-hidden="true">V1.0.0 · PREDUSK · 2025</span>
+
+    <!-- Cabin -->
+    <div class="cabin" id="cabin">
+      <div class="windshield" id="windshield">
+
+        <!-- Ambient glow lines -->
+        <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,rgba(212,240,0,0.15),transparent);"></div>
+
+        <!-- Driver silhouette (SVG inline) -->
+        <svg class="driver-silhouette" viewBox="0 0 280 220" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Seat back -->
+          <rect x="60" y="80" width="160" height="140" rx="8" fill="#111"/>
+          <!-- Head -->
+          <ellipse cx="140" cy="65" rx="38" ry="44" fill="#1a1a1a"/>
+          <!-- Shoulders -->
+          <path d="M55 120 Q140 95 225 120 L230 220 H50 Z" fill="#0f0f0f"/>
+          <!-- Neck -->
+          <rect x="126" y="100" width="28" height="25" fill="#1a1a1a"/>
+          <!-- Helmet visor hint -->
+          <ellipse cx="140" cy="58" rx="26" ry="16" fill="#222" opacity="0.6"/>
+        </svg>
+
+        <!-- Steering wheel SVG -->
+        <svg class="steering" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="100" cy="100" r="90" stroke="#2a2a2a" stroke-width="14"/>
+          <circle cx="100" cy="100" r="15" fill="#1a1a1a" stroke="#333" stroke-width="3"/>
+          <line x1="100" y1="85" x2="100" y2="25" stroke="#2a2a2a" stroke-width="8" stroke-linecap="round"/>
+          <line x1="115" y1="104" x2="172" y2="78" stroke="#2a2a2a" stroke-width="8" stroke-linecap="round"/>
+          <line x1="85" y1="104" x2="28" y2="78" stroke="#2a2a2a" stroke-width="8" stroke-linecap="round"/>
+        </svg>
+
+        <!-- Dashboard shelf -->
+        <div class="dash-shelf"></div>
+
+        <!-- HUD Layer -->
+        <div class="hud-layer" aria-hidden="true">
+          <!-- Bounding box -->
+          <div class="bbox" id="bbox">
+            <div class="bbox-corner tl" id="bbc-tl"></div>
+            <div class="bbox-corner tr" id="bbc-tr"></div>
+            <div class="bbox-corner bl" id="bbc-bl"></div>
+            <div class="bbox-corner br" id="bbc-br"></div>
+          </div>
+
+          <!-- Face mesh SVG -->
+          <svg class="face-mesh" id="faceMesh" viewBox="0 0 200 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Mesh lines - horizontal -->
+            <line x1="20" y1="60"  x2="180" y2="60"  stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <line x1="10" y1="90"  x2="190" y2="90"  stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <line x1="15" y1="120" x2="185" y2="120" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <line x1="25" y1="150" x2="175" y2="150" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <line x1="40" y1="180" x2="160" y2="180" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <!-- Mesh lines - vertical -->
+            <line x1="40"  y1="30" x2="30"  y2="200" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <line x1="80"  y1="20" x2="70"  y2="210" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <line x1="100" y1="15" x2="100" y2="215" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <line x1="120" y1="20" x2="130" y2="210" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <line x1="160" y1="30" x2="170" y2="200" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
+            <!-- Key landmarks -->
+            <circle cx="100" cy="50"  r="3" fill="#D4F000" opacity="0.9"/>
+            <circle cx="68"  cy="85"  r="2.5" fill="#D4F000" opacity="0.9"/>
+            <circle cx="132" cy="85"  r="2.5" fill="#D4F000" opacity="0.9"/>
+            <circle cx="100" cy="130" r="2" fill="#D4F000" opacity="0.7"/>
+            <circle cx="75"  cy="160" r="2" fill="#D4F000" opacity="0.7"/>
+            <circle cx="125" cy="160" r="2" fill="#D4F000" opacity="0.7"/>
+            <!-- EAR eye outline -->
+            <ellipse cx="68" cy="85" rx="12" ry="5" stroke="#00F3FF" stroke-width="1" opacity="0.6"/>
+            <ellipse cx="132" cy="85" rx="12" ry="5" stroke="#00F3FF" stroke-width="1" opacity="0.6"/>
+          </svg>
+
+          <!-- Scanline -->
+          <div class="scanline" id="scanline"></div>
+
+          <!-- Data panels -->
+          <div class="hud-panel left" id="hudLeft">
+            <div>SUBJECT <span class="val">DRIVER_01</span></div>
+            <div>EAR <span class="val" id="earVal">0.312</span></div>
+            <div>MAR <span class="val">0.041</span></div>
+            <div>PERCLOS <span class="val">0.08</span></div>
+            <div>STATUS <span class="val" style="color:#D4F000">ALERT</span></div>
+          </div>
+          <div class="hud-panel right" id="hudRight">
+            <div>MODEL <span class="val">EfficientNet-B0</span></div>
+            <div>CONF <span class="val" id="confVal">97.3%</span></div>
+            <div>LATENCY <span class="val">14ms</span></div>
+            <div>DEVICE <span class="val">EDGE</span></div>
+            <div>CLOUD <span class="val" style="color:#ff4444">NONE</span></div>
+          </div>
+
+          <!-- Status badge -->
+          <div class="hud-status" id="hudStatus">FALCON ACTIVE</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="scroll-hint" aria-hidden="true">
+      <div class="scroll-hint-line"></div>
+      <span>Scroll to engage</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     B. MISSION STATEMENT
+============================================================ -->
+<section id="mission" aria-label="Mission statement">
+  <div class="label"><span>02 /</span> Mission</div>
+  <div class="mission-words" id="missionWords" aria-label="Redefining in-cabin safety. Real-time edge AI. Zero cloud latency.">
+    <span class="word">REDEFINING</span>
+    <span class="word">IN-CABIN</span>
+    <span class="word">SAFETY.</span>
+    <br/>
+    <span class="word">REAL-TIME</span>
+    <span class="word">EDGE</span>
+    <span class="word neon-target">AI.</span>
+    <br/>
+    <span class="mission-divider">
+      <span class="word">ZERO</span>
+      <span class="word">CLOUD</span>
+      <span class="word">LATENCY.</span>
+    </span>
+  </div>
+  <div class="mission-sub">
+    Falcon runs entirely on-device. No network hop. No privacy risk. 100% local inference.
+  </div>
+</section>
+
+<!-- ============================================================
+     C. DROWSINESS vs DISTRACTION
+============================================================ -->
+<section id="detection" aria-label="Detection modules">
+  <div class="label"><span>03 /</span> Detection Modules</div>
+  <div class="detection-grid">
+
+    <!-- Drowsiness -->
+    <div class="detect-block drowsy" tabindex="0" role="button" aria-label="Drowsiness detection module">
+      <div class="detect-tech" aria-hidden="true">
+        <div class="tech-chip"><span class="k">METHOD </span><span class="v">EAR + PERCLOS</span></div>
+        <div class="tech-chip"><span class="k">EAR_THRESH </span><span class="v">0.25</span></div>
+        <div class="tech-chip"><span class="k">CONSEC_FRAMES </span><span class="v">20</span></div>
+        <div class="tech-chip"><span class="k">MESH_POINTS </span><span class="v">478</span></div>
+        <div class="tech-chip"><span class="k">BACKEND </span><span class="v">MediaPipe</span></div>
+      </div>
+      <div class="detect-label">DROWSI<br/>NESS</div>
+      <p class="detect-desc">Eye Aspect Ratio + PERCLOS analysis via MediaPipe FaceMesh. Detects micro-sleep onset before it becomes critical.</p>
+    </div>
+
+    <!-- Distraction -->
+    <div class="detect-block distract" tabindex="0" role="button" aria-label="Distraction detection module">
+      <div class="detect-tech" aria-hidden="true">
+        <div class="tech-chip"><span class="k">MODEL </span><span class="v">EfficientNet-B0</span></div>
+        <div class="tech-chip"><span class="k">CLASSES </span><span class="v">10</span></div>
+        <div class="tech-chip"><span class="k">INPUT </span><span class="v">224×224 RGB</span></div>
+        <div class="tech-chip"><span class="k">LATENCY </span><span class="v">&lt;14ms</span></div>
+        <div class="tech-chip"><span class="k">BACKEND </span><span class="v">PyTorch</span></div>
+      </div>
+      <div class="detect-label">DIS<br/>TRACTION</div>
+      <p class="detect-desc">EfficientNet-B0 classifies 10 distraction behaviours in real-time. Head pose + gaze fusion for context-aware alerts.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     D. HORIZONTAL TECH SHOWCASE
+============================================================ -->
+<section id="tech-showcase" aria-label="Technology showcase">
+  <div class="tech-sticky" id="techSticky">
+    <div class="tech-header">
+      <div class="label"><span>04 /</span> Under the Hood</div>
+      <h2>THE STACK</h2>
+    </div>
+    <div class="tech-track-wrap">
+      <div class="tech-track" id="techTrack">
+
+        <!-- Card 1 -->
+        <article class="tech-card" data-fill="88">
+          <div class="tc-index">01 / 05</div>
+          <svg class="tc-accent" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <circle cx="20" cy="20" r="18" stroke="#D4F000" stroke-width="1"/>
+            <path d="M20 8 L32 26 H8 Z" stroke="#D4F000" stroke-width="1" fill="none"/>
+          </svg>
+          <div class="tc-title">FACE<br/>MESH</div>
+          <div class="tc-sub">MediaPipe · 478 Landmarks</div>
+          <div class="tc-stats">
+            <div class="tc-stat"><span class="key">FRAMEWORK</span><span class="val">MediaPipe</span></div>
+            <div class="tc-stat"><span class="key">LANDMARKS</span><span class="val">478</span></div>
+            <div class="tc-stat"><span class="key">FPS</span><span class="val">~30fps</span></div>
+            <div class="tc-stat"><span class="key">DEVICE</span><span class="val">CPU / GPU</span></div>
+          </div>
+          <div class="tc-bar"><div class="tc-bar-fill" style="width:88%"></div></div>
+        </article>
+
+        <!-- Card 2 -->
+        <article class="tech-card" data-fill="95">
+          <div class="tc-index">02 / 05</div>
+          <svg class="tc-accent" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <rect x="4" y="4" width="32" height="32" rx="4" stroke="#D4F000" stroke-width="1"/>
+            <rect x="12" y="12" width="16" height="16" rx="2" stroke="#D4F000" stroke-width="1"/>
+          </svg>
+          <div class="tc-title">EFFICIENT<br/>NET-B0</div>
+          <div class="tc-sub">PyTorch · 10-Class Classifier</div>
+          <div class="tc-stats">
+            <div class="tc-stat"><span class="key">PARAMS</span><span class="val">5.3M</span></div>
+            <div class="tc-stat"><span class="key">INPUT</span><span class="val">224×224</span></div>
+            <div class="tc-stat"><span class="key">LATENCY</span><span class="val">&lt;14ms</span></div>
+            <div class="tc-stat"><span class="key">ACC</span><span class="val">~97%</span></div>
+          </div>
+          <div class="tc-bar"><div class="tc-bar-fill" style="width:95%"></div></div>
+        </article>
+
+        <!-- Card 3 -->
+        <article class="tech-card" data-fill="76">
+          <div class="tc-index">03 / 05</div>
+          <svg class="tc-accent" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <polygon points="20,4 36,20 20,36 4,20" stroke="#D4F000" stroke-width="1" fill="none"/>
+            <circle cx="20" cy="20" r="4" fill="#D4F000" opacity="0.4"/>
+          </svg>
+          <div class="tc-title">CONTEXT<br/>ENGINE</div>
+          <div class="tc-sub">Fusion Layer · Rule-Based</div>
+          <div class="tc-stats">
+            <div class="tc-stat"><span class="key">INPUTS</span><span class="val">EAR + CLASS</span></div>
+            <div class="tc-stat"><span class="key">ALERT LEVELS</span><span class="val">3</span></div>
+            <div class="tc-stat"><span class="key">LATENCY</span><span class="val">&lt;1ms</span></div>
+            <div class="tc-stat"><span class="key">TYPE</span><span class="val">DETERMINISTIC</span></div>
+          </div>
+          <div class="tc-bar"><div class="tc-bar-fill" style="width:76%"></div></div>
+        </article>
+
+        <!-- Card 4 -->
+        <article class="tech-card" data-fill="90">
+          <div class="tc-index">04 / 05</div>
+          <svg class="tc-accent" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <circle cx="20" cy="10" r="5" stroke="#D4F000" stroke-width="1"/>
+            <circle cx="8"  cy="30" r="5" stroke="#D4F000" stroke-width="1"/>
+            <circle cx="32" cy="30" r="5" stroke="#D4F000" stroke-width="1"/>
+            <line x1="20" y1="15" x2="8"  y2="25" stroke="#D4F000" stroke-width="0.8"/>
+            <line x1="20" y1="15" x2="32" y2="25" stroke="#D4F000" stroke-width="0.8"/>
+          </svg>
+          <div class="tc-title">FAST<br/>API</div>
+          <div class="tc-sub">REST Backend · Python 3.11</div>
+          <div class="tc-stats">
+            <div class="tc-stat"><span class="key">ENDPOINTS</span><span class="val">6</span></div>
+            <div class="tc-stat"><span class="key">PROTOCOL</span><span class="val">HTTP/1.1</span></div>
+            <div class="tc-stat"><span class="key">DOCS</span><span class="val">/docs</span></div>
+            <div class="tc-stat"><span class="key">PORT</span><span class="val">8000</span></div>
+          </div>
+          <div class="tc-bar"><div class="tc-bar-fill" style="width:90%"></div></div>
+        </article>
+
+        <!-- Card 5 -->
+        <article class="tech-card" data-fill="82">
+          <div class="tc-index">05 / 05</div>
+          <svg class="tc-accent" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <rect x="4" y="4" width="14" height="32" rx="2" stroke="#D4F000" stroke-width="1"/>
+            <rect x="22" y="4" width="14" height="20" rx="2" stroke="#D4F000" stroke-width="1"/>
+          </svg>
+          <div class="tc-title">STREAM<br/>LIT</div>
+          <div class="tc-sub">Cockpit Dashboard · Python</div>
+          <div class="tc-stats">
+            <div class="tc-stat"><span class="key">PORT</span><span class="val">8501</span></div>
+            <div class="tc-stat"><span class="key">LIVE FEED</span><span class="val">YES</span></div>
+            <div class="tc-stat"><span class="key">LOGS</span><span class="val">REAL-TIME</span></div>
+            <div class="tc-stat"><span class="key">CHARTS</span><span class="val">PLOTLY</span></div>
+          </div>
+          <div class="tc-bar"><div class="tc-bar-fill" style="width:82%"></div></div>
+        </article>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     E. CIRCUIT SIGNATURE
+============================================================ -->
+<section id="signature" aria-label="Footer signature">
+  <div class="circuit-svg-wrap">
+    <svg id="circuitSvg" viewBox="0 0 700 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- Main horizontal spine -->
+      <path id="cp1" d="M 20 100 H 150" stroke="#D4F000" stroke-width="1.5"/>
+      <!-- Branch up -->
+      <path id="cp2" d="M 150 100 V 40" stroke="#D4F000" stroke-width="1.5"/>
+      <!-- Horizontal top -->
+      <path id="cp3" d="M 150 40 H 350" stroke="#D4F000" stroke-width="1.5"/>
+      <!-- Branch down from 350 -->
+      <path id="cp4" d="M 350 40 V 100" stroke="#D4F000" stroke-width="1.5"/>
+      <!-- Continue right on middle -->
+      <path id="cp5" d="M 350 100 H 550" stroke="#D4F000" stroke-width="1.5"/>
+      <!-- Branch down from 550 -->
+      <path id="cp6" d="M 550 100 V 160" stroke="#D4F000" stroke-width="1.5"/>
+      <!-- Horizontal bottom right -->
+      <path id="cp7" d="M 550 160 H 680" stroke="#D4F000" stroke-width="1.5"/>
+      <!-- Secondary branch down from 150 -->
+      <path id="cp8" d="M 250 100 V 160 H 450" stroke="#00F3FF" stroke-width="1" opacity="0.5"/>
+      <!-- Small branch from 450 -->
+      <path id="cp9" d="M 450 160 V 100" stroke="#00F3FF" stroke-width="1" opacity="0.5"/>
+
+      <!-- Nodes -->
+      <circle id="cn1" cx="150" cy="100" r="5"  fill="#D4F000"/>
+      <circle id="cn2" cx="150" cy="40"  r="3"  fill="#D4F000" opacity="0.6"/>
+      <circle id="cn3" cx="350" cy="40"  r="4"  fill="#D4F000"/>
+      <circle id="cn4" cx="350" cy="100" r="3"  fill="#D4F000" opacity="0.6"/>
+      <circle id="cn5" cx="550" cy="100" r="5"  fill="#D4F000"/>
+      <circle id="cn6" cx="550" cy="160" r="3"  fill="#D4F000" opacity="0.6"/>
+      <circle id="cn7" cx="250" cy="100" r="3"  fill="#00F3FF" opacity="0.7"/>
+      <circle id="cn8" cx="450" cy="160" r="3"  fill="#00F3FF" opacity="0.7"/>
+
+      <!-- Glow rings on key nodes (animated via CSS) -->
+      <circle cx="150" cy="100" r="12" stroke="#D4F000" stroke-width="0.5" opacity="0" class="node-ring" id="nr1"/>
+      <circle cx="350" cy="40"  r="10" stroke="#D4F000" stroke-width="0.5" opacity="0" class="node-ring" id="nr2"/>
+      <circle cx="550" cy="100" r="12" stroke="#D4F000" stroke-width="0.5" opacity="0" class="node-ring" id="nr3"/>
+    </svg>
   </div>
 
-  <!-- ── NAV ── -->
-  <nav aria-label="Main navigation">
-    <a href="#" class="nav-logo" aria-label="Falcon home">
-      <svg class="nav-logo-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <polygon points="16,2 30,28 16,22 2,28" stroke="#D4F000" stroke-width="1.5" fill="none"/>
-        <line x1="16" y1="2" x2="16" y2="22" stroke="#D4F000" stroke-width="1" opacity="0.4"/>
-      </svg>
-      <span class="nav-logo-text">FALCON</span>
-    </a>
-    <ul class="nav-links">
-      <li><a href="#manifesto">ABOUT</a></li>
-      <li><a href="#detection">DETECTION</a></li>
-      <li><a href="#tech-showcase">MODELS</a></li>
-      <li><a href="#circuit">LAUNCH</a></li>
-    </ul>
-    <div class="nav-status" aria-live="polite">
-      <div class="nav-status-dot" aria-hidden="true"></div>
-      <span>EDGE AI · ACTIVE</span>
-    </div>
-  </nav>
+  <div class="sig-headline">
+    ZERO CLOUD.<br/><span class="neon">PURE SPEED.</span>
+  </div>
+  <p class="sig-sub">
+    Falcon processes every frame locally. Your biometric data never leaves the vehicle.
+  </p>
+  <div class="sig-ctas">
+    <a href="http://localhost:8501" class="btn-primary" target="_blank" rel="noopener noreferrer">Launch Cockpit</a>
+    <a href="http://localhost:8000/docs" class="btn-ghost" target="_blank" rel="noopener noreferrer">API Reference</a>
+  </div>
+</section>
 
-  <main>
+<!-- ============================================================
+     FOOTER
+============================================================ -->
+<footer>
+  <span>FALCON <span class="f-neon">EDGE AI</span> — DRIVER COMPANION</span>
+  <span>PREDUSK · IIT MANDI · 2025</span>
+  <span>BUILT WITH <span class="f-neon">ZERO CLOUD</span></span>
+</footer>
 
-    <!-- ════════════════════════════════════
-         SECTION A — HERO (The AR Overlay)
-    ════════════════════════════════════ -->
-    <section id="hero" aria-label="Hero — Falcon driver companion">
-      <div class="hero-sticky">
+<!-- ============================================================
+     SCRIPTS
+============================================================ -->
+<script>
+/* ============================================================
+   1. LENIS SMOOTH SCROLL
+============================================================ */
+const lenis = new Lenis({
+  duration: 1.4,
+  easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+  direction: 'vertical',
+  smooth: true,
+});
+function raf(time) {
+  lenis.raf(time);
+  requestAnimationFrame(raf);
+}
+requestAnimationFrame(raf);
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.lagSmoothing(0);
 
-        <!-- Parallax background word -->
-        <div class="hero-bg-word" id="heroBgWord" aria-hidden="true">FALCON</div>
+/* ============================================================
+   2. CUSTOM CURSOR
+============================================================ */
+const cur = document.getElementById('cursor');
+const curRing = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function cursorLoop() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  cur.style.left = mx + 'px';
+  cur.style.top  = my + 'px';
+  curRing.style.left = rx + 'px';
+  curRing.style.top  = ry + 'px';
+  requestAnimationFrame(cursorLoop);
+})();
+document.querySelectorAll('a, button, [role="button"], .detect-block, .tech-card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cur.style.width = '24px'; cur.style.height = '24px';
+    curRing.style.transform = 'translate(-50%,-50%) scale(1.6)';
+  });
+  el.addEventListener('mouseleave', () => {
+    cur.style.width = '12px'; cur.style.height = '12px';
+    curRing.style.transform = 'translate(-50%,-50%) scale(1)';
+  });
+});
 
-        <!-- Car cabin scene -->
-        <div class="hero-scene">
-          <div class="car-cabin" id="carCabin">
+/* ============================================================
+   3. PRELOADER
+============================================================ */
+const preBar = document.getElementById('preBar');
+const preCounter = document.getElementById('preCounter');
+const preLetters = document.querySelectorAll('.pre-logo span');
+const prePanel = document.getElementById('prePanel');
+const preloader = document.getElementById('preloader');
 
-            <!-- HUD AR overlay -->
-            <div class="hud-overlay" aria-hidden="true">
-              <div class="hud-corner tl" id="hud-tl"></div>
-              <div class="hud-corner tr" id="hud-tr"></div>
-              <div class="hud-corner bl" id="hud-bl"></div>
-              <div class="hud-corner br" id="hud-br"></div>
+let count = 0;
+const countInterval = setInterval(() => {
+  count += Math.floor(Math.random() * 6) + 2;
+  if (count >= 100) { count = 100; clearInterval(countInterval); }
+  preBar.style.width = count + '%';
+  preCounter.textContent = String(count).padStart(3, '0');
+}, 40);
 
-              <!-- Face mesh SVG -->
-              <svg class="hud-face-mesh" id="hudFaceMesh" viewBox="0 0 120 140" fill="none">
-                <line x1="60" y1="10" x2="30" y2="50" stroke="#D4F000" stroke-width="0.5" opacity="0.6"/>
-                <line x1="60" y1="10" x2="90" y2="50" stroke="#D4F000" stroke-width="0.5" opacity="0.6"/>
-                <line x1="30" y1="50" x2="60" y2="80" stroke="#D4F000" stroke-width="0.5" opacity="0.6"/>
-                <line x1="90" y1="50" x2="60" y2="80" stroke="#D4F000" stroke-width="0.5" opacity="0.6"/>
-                <line x1="30" y1="50" x2="90" y2="50" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
-                <line x1="20" y1="35" x2="45" y2="55" stroke="#00F3FF" stroke-width="0.5" opacity="0.5"/>
-                <line x1="75" y1="55" x2="100" y2="35" stroke="#00F3FF" stroke-width="0.5" opacity="0.5"/>
-                <line x1="40" y1="60" x2="80" y2="60" stroke="#00F3FF" stroke-width="0.5" opacity="0.5"/>
-                <line x1="50" y1="75" x2="70" y2="75" stroke="#D4F000" stroke-width="0.5" opacity="0.6"/>
-                <line x1="45" y1="80" x2="75" y2="80" stroke="#D4F000" stroke-width="0.5" opacity="0.6"/>
-                <line x1="50" y1="95" x2="70" y2="95" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
-                <line x1="55" y1="75" x2="55" y2="95" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
-                <line x1="65" y1="75" x2="65" y2="95" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/>
-                <circle cx="30" cy="50" r="2" fill="#D4F000" opacity="0.8"/>
-                <circle cx="90" cy="50" r="2" fill="#D4F000" opacity="0.8"/>
-                <circle cx="60" cy="80" r="2" fill="#00F3FF" opacity="0.8"/>
-                <circle cx="60" cy="10" r="2" fill="#D4F000" opacity="0.8"/>
-                <circle cx="20" cy="35" r="1.5" fill="#00F3FF" opacity="0.6"/>
-                <circle cx="100" cy="35" r="1.5" fill="#00F3FF" opacity="0.6"/>
-                <ellipse cx="30" cy="48" rx="8" ry="5" stroke="#00F3FF" stroke-width="0.5" opacity="0.5" fill="none"/>
-                <ellipse cx="90" cy="48" rx="8" ry="5" stroke="#00F3FF" stroke-width="0.5" opacity="0.5" fill="none"/>
-              </svg>
-
-              <div class="hud-scanline" id="hudScanline"></div>
-
-              <div class="hud-data-left" id="hudDataLeft">
-                <div class="hud-data-row">EAR_LEFT  <span class="val">0.312</span></div>
-                <div class="hud-data-row">EAR_RIGHT <span class="val">0.308</span></div>
-                <div class="hud-data-row">MAR       <span class="val">0.041</span></div>
-                <div class="hud-data-row">PERCLOS   <span class="val">0.08</span></div>
-              </div>
-              <div class="hud-data-right" id="hudDataRight">
-                <div class="hud-data-row">GAZE_X  <span class="val">+0.02</span></div>
-                <div class="hud-data-row">GAZE_Y  <span class="val">-0.01</span></div>
-                <div class="hud-data-row">HEAD_YAW <span class="val">2.1°</span></div>
-                <div class="hud-data-row">ALERT   <span class="val" style="color:#D4F000">OK</span></div>
-              </div>
-            </div>
-
-            <!-- Driver figure -->
-            <div class="driver-figure" aria-hidden="true">
-              <div class="driver-head">
-                <div class="driver-helmet-visor"></div>
-              </div>
-              <div class="driver-body" style="position:relative">
-                <div class="driver-shoulder-l"></div>
-                <div class="driver-shoulder-r"></div>
-              </div>
-            </div>
-
-            <!-- Steering wheel -->
-            <div class="steering-wheel" aria-hidden="true"><div class="sw-inner"></div></div>
-
-            <!-- Dashboard bar -->
-            <div class="dashboard-bar" aria-hidden="true">
-              <div class="dash-gauge">
-                <div class="dash-gauge-label">DROWSY</div>
-                <div class="dash-gauge-value">0%</div>
-              </div>
-              <div class="dash-gauge">
-                <div class="dash-gauge-label">DISTRACT</div>
-                <div class="dash-gauge-value">0%</div>
-              </div>
-              <div class="dash-center">FAL / CON</div>
-              <div class="dash-gauge">
-                <div class="dash-gauge-label">LATENCY</div>
-                <div class="dash-gauge-value">12ms</div>
-              </div>
-              <div class="dash-gauge">
-                <div class="dash-gauge-label">MODEL</div>
-                <div class="dash-gauge-value">ON</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Text overlays -->
-        <div class="hero-bottom-left" id="heroTextLeft">
-          <div class="hero-eyebrow">Edge AI · In-Cabin · Real-Time</div>
-          <div class="hero-tagline">NEVER<br>LOSE<br><span class="accent">FOCUS</span></div>
-        </div>
-        <div class="hero-bottom-right" id="heroTextRight">
-          <div class="hero-eyebrow">MODEL STACK</div>
-          <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);line-height:2">
-            MediaPipe FaceMesh<br>EfficientNet-B0<br>Context Engine<br>FastAPI · Streamlit
-          </div>
-        </div>
-
-        <div class="hero-scroll-hint" aria-hidden="true">
-          <span>SCROLL</span>
-          <div class="scroll-line"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ════════════════════════════════════
-         SECTION B — KINETIC MANIFESTO
-    ════════════════════════════════════ -->
-    <section id="manifesto" aria-label="Mission statement">
-      <div class="manifesto-inner">
-        <div class="label-tag">MISSION</div>
-        <ul class="manifesto-lines" id="manifestoLines">
-          <li class="manifesto-line" data-line="0">
-            <span class="manifesto-word" data-word>REDEFINING</span>
-            <span class="manifesto-word" data-word>IN-CABIN</span>
-            <span class="manifesto-word" data-word>SAFETY.</span>
-          </li>
-          <li class="manifesto-line" data-line="1">
-            <span class="manifesto-word" data-word>REAL-TIME</span>
-            <span class="manifesto-word" data-word>EDGE</span>
-            <span class="manifesto-word" data-word>AI.</span>
-          </li>
-          <li class="manifesto-line" data-line="2">
-            <span class="manifesto-word" data-word>ZERO</span>
-            <span class="manifesto-word" data-word>CLOUD</span>
-            <span class="manifesto-word" data-word>LATENCY.</span>
-          </li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- ════════════════════════════════════
-         SECTION C — DROWSINESS vs DISTRACTION
-    ════════════════════════════════════ -->
-    <section id="detection" aria-label="Detection modes">
-      <p class="detection-header">// DUAL DETECTION SYSTEM · v2.1</p>
-      <div class="detection-split" id="detectionSplit">
-        <div class="detection-block" id="blockDrowsy" role="article" tabindex="0" aria-label="Drowsiness detection">
-          <div class="detection-block-title">DROWSI<br>NESS</div>
-          <p class="detection-block-sub">MediaPipe FaceMesh + EAR/MAR/PERCLOS thresholds. 468 facial landmarks. Sub-20ms inference.</p>
-          <div class="detection-tech-cards" aria-hidden="true">
-            <div class="tech-mini-card">
-              EAR threshold: <span class="highlight">0.25</span><br>
-              PERCLOS window: <span class="highlight">60 frames</span><br>
-              Confidence: <span class="highlight">94.2%</span>
-            </div>
-            <div class="tech-mini-card">
-              { "state": "DROWSY",<br>
-              "ear": <span class="highlight">0.18</span>,<br>
-              "alert": <span class="highlight">true</span> }
-            </div>
-          </div>
-        </div>
-        <div class="detection-block" id="blockDistract" role="article" tabindex="0" aria-label="Distraction detection">
-          <div class="detection-block-title">DIS-<br>TRACT<br>ION</div>
-          <p class="detection-block-sub">EfficientNet-B0 gaze + head pose estimation. Context-aware with 6-class output. GPU-optional.</p>
-          <div class="detection-tech-cards" aria-hidden="true">
-            <div class="tech-mini-card">
-              Model: <span class="highlight">EfficientNet-B0</span><br>
-              Classes: <span class="highlight">6</span><br>
-              Accuracy: <span class="highlight">91.7%</span>
-            </div>
-            <div class="tech-mini-card">
-              head_yaw: <span class="highlight">±35°</span><br>
-              gaze_off_road: <span class="highlight">false</span><br>
-              phone_detected: <span class="highlight">false</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ════════════════════════════════════
-         SECTION D — HORIZONTAL TECH SHOWCASE
-    ════════════════════════════════════ -->
-    <section id="tech-showcase" style="height:300vh" aria-label="Technology showcase">
-      <div class="tech-showcase-sticky">
-        <div style="position:absolute;top:var(--space-8);left:var(--space-8)">
-          <div class="label-tag">MODEL STACK</div>
-        </div>
-        <div class="tech-showcase-track" id="techTrack">
-
-          <!-- Card 1: FaceMesh -->
-          <div class="tech-card" tabindex="0" aria-label="MediaPipe FaceMesh">
-            <div class="tech-card-number">01 / 05</div>
-            <svg class="tech-card-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-              <circle cx="24" cy="20" r="10" stroke="#D4F000" stroke-width="1.5"/>
-              <line x1="24" y1="10" x2="14" y2="25" stroke="#D4F000" stroke-width="1" opacity="0.5"/>
-              <line x1="24" y1="10" x2="34" y2="25" stroke="#D4F000" stroke-width="1" opacity="0.5"/>
-              <circle cx="19" cy="18" r="2" fill="#00F3FF"/>
-              <circle cx="29" cy="18" r="2" fill="#00F3FF"/>
-              <line x1="21" y1="23" x2="27" y2="23" stroke="#D4F000" stroke-width="1" opacity="0.6"/>
-            </svg>
-            <div class="tech-card-title">FACE<br>MESH</div>
-            <div class="tech-card-subtitle">MediaPipe · 468 landmarks</div>
-            <p class="tech-card-body">Real-time 3D facial geometry for eye aspect ratio, mouth aperture ratio, and head pose estimation without a dedicated GPU.</p>
-            <div class="tech-card-metric">
-              <div class="metric-item"><div class="metric-label">Landmarks</div><div class="metric-value">468</div></div>
-              <div class="metric-item"><div class="metric-label">Latency</div><div class="metric-value">8ms</div></div>
-              <div class="metric-item"><div class="metric-label">Device</div><div class="metric-value">CPU</div></div>
-            </div>
-          </div>
-
-          <!-- Card 2: EfficientNet-B0 -->
-          <div class="tech-card" tabindex="0" aria-label="EfficientNet-B0">
-            <div class="tech-card-number">02 / 05</div>
-            <svg class="tech-card-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-              <rect x="8" y="8" width="12" height="12" stroke="#D4F000" stroke-width="1.5" rx="2"/>
-              <rect x="28" y="8" width="12" height="12" stroke="#D4F000" stroke-width="1.5" rx="2"/>
-              <rect x="8" y="28" width="12" height="12" stroke="#D4F000" stroke-width="1.5" rx="2"/>
-              <rect x="28" y="28" width="12" height="12" stroke="#D4F000" stroke-width="1.5" rx="2"/>
-              <line x1="20" y1="14" x2="28" y2="14" stroke="#00F3FF" stroke-width="1"/>
-              <line x1="20" y1="34" x2="28" y2="34" stroke="#00F3FF" stroke-width="1"/>
-              <line x1="14" y1="20" x2="14" y2="28" stroke="#00F3FF" stroke-width="1"/>
-              <line x1="34" y1="20" x2="34" y2="28" stroke="#00F3FF" stroke-width="1"/>
-            </svg>
-            <div class="tech-card-title">EFFICI<br>NET-B0</div>
-            <div class="tech-card-subtitle">PyTorch · Fine-tuned</div>
-            <p class="tech-card-body">Compound-scaled CNN for distraction classification. 6 output classes covering phone use, eating, looking away, and attentive states.</p>
-            <div class="tech-card-metric">
-              <div class="metric-item"><div class="metric-label">Params</div><div class="metric-value">5.3M</div></div>
-              <div class="metric-item"><div class="metric-label">Accuracy</div><div class="metric-value">91.7%</div></div>
-              <div class="metric-item"><div class="metric-label">Classes</div><div class="metric-value">6</div></div>
-            </div>
-          </div>
-
-          <!-- Card 3: Context Engine -->
-          <div class="tech-card" tabindex="0" aria-label="Context Engine">
-            <div class="tech-card-number">03 / 05</div>
-            <svg class="tech-card-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-              <polygon points="24,6 42,38 6,38" stroke="#D4F000" stroke-width="1.5" fill="none"/>
-              <line x1="24" y1="6" x2="24" y2="38" stroke="#D4F000" stroke-width="1" opacity="0.4"/>
-              <line x1="6" y1="38" x2="42" y2="38" stroke="#D4F000" stroke-width="1" opacity="0.4"/>
-              <circle cx="24" cy="25" r="3" fill="#D4F000" opacity="0.8"/>
-            </svg>
-            <div class="tech-card-title">CONTEXT<br>ENGINE</div>
-            <div class="tech-card-subtitle">Fusion · Rule-based</div>
-            <p class="tech-card-body">Temporal fusion layer combining FaceMesh signals and CNN outputs with speed/time-of-day context for adaptive alert thresholds.</p>
-            <div class="tech-card-metric">
-              <div class="metric-item"><div class="metric-label">False Positive</div><div class="metric-value">2.1%</div></div>
-              <div class="metric-item"><div class="metric-label">Window</div><div class="metric-value">3s</div></div>
-              <div class="metric-item"><div class="metric-label">Inputs</div><div class="metric-value">12</div></div>
-            </div>
-          </div>
-
-          <!-- Card 4: FastAPI -->
-          <div class="tech-card" tabindex="0" aria-label="FastAPI Backend">
-            <div class="tech-card-number">04 / 05</div>
-            <svg class="tech-card-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-              <path d="M8 24 L24 8 L40 24 L24 40 Z" stroke="#D4F000" stroke-width="1.5" fill="none"/>
-              <path d="M16 24 L24 16 L32 24 L24 32 Z" stroke="#00F3FF" stroke-width="1" fill="none"/>
-              <circle cx="24" cy="24" r="3" fill="#D4F000"/>
-            </svg>
-            <div class="tech-card-title">FAST<br>API</div>
-            <div class="tech-card-subtitle">Python · Async REST</div>
-            <p class="tech-card-body">Async REST backend serving inference results, video frame streaming, and alert state. WebSocket support for real-time dashboard updates.</p>
-            <div class="tech-card-metric">
-              <div class="metric-item"><div class="metric-label">Port</div><div class="metric-value">8000</div></div>
-              <div class="metric-item"><div class="metric-label">Endpoints</div><div class="metric-value">8</div></div>
-              <div class="metric-item"><div class="metric-label">Stream</div><div class="metric-value">MJPEG</div></div>
-            </div>
-          </div>
-
-          <!-- Card 5: Streamlit -->
-          <div class="tech-card" tabindex="0" aria-label="Streamlit Dashboard">
-            <div class="tech-card-number">05 / 05</div>
-            <svg class="tech-card-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-              <rect x="6" y="10" width="36" height="28" rx="4" stroke="#D4F000" stroke-width="1.5"/>
-              <line x1="6" y1="18" x2="42" y2="18" stroke="#D4F000" stroke-width="1" opacity="0.4"/>
-              <rect x="12" y="23" width="8" height="8" rx="1" fill="#D4F000" opacity="0.6"/>
-              <rect x="24" y="23" width="12" height="3" rx="1" fill="#00F3FF" opacity="0.5"/>
-              <rect x="24" y="28" width="8" height="3" rx="1" fill="#00F3FF" opacity="0.3"/>
-            </svg>
-            <div class="tech-card-title">STREAM<br>LIT</div>
-            <div class="tech-card-subtitle">Dashboard · Port 8501</div>
-            <p class="tech-card-body">Live video feed with overlay annotations, real-time confidence gauges, historical alert logs, and session statistics in a responsive dashboard.</p>
-            <div class="tech-card-metric">
-              <div class="metric-item"><div class="metric-label">Port</div><div class="metric-value">8501</div></div>
-              <div class="metric-item"><div class="metric-label">Refresh</div><div class="metric-value">33ms</div></div>
-              <div class="metric-item"><div class="metric-label">FPS</div><div class="metric-value">30</div></div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- ════════════════════════════════════
-         SECTION E — CIRCUIT SIGNATURE
-    ════════════════════════════════════ -->
-    <section id="circuit" aria-label="Launch Falcon">
-      <div class="circuit-svg-wrap" aria-hidden="true">
-        <svg viewBox="0 0 700 200" fill="none" id="circuitSvg">
-          <!-- Main horizontal spine -->
-          <path class="circuit-path" d="M 30 100 H 120" stroke="#D4F000" stroke-width="1.5" id="cp1"/>
-          <!-- Branch up -->
-          <path class="circuit-path" d="M 120 100 V 40 H 250" stroke="#D4F000" stroke-width="1.5" id="cp2"/>
-          <!-- Branch down -->
-          <path class="circuit-path" d="M 120 100 V 160 H 250" stroke="#D4F000" stroke-width="1.5" id="cp3"/>
-          <!-- Reconnect -->
-          <path class="circuit-path" d="M 250 40 H 400 V 100" stroke="#00F3FF" stroke-width="1.5" id="cp4"/>
-          <path class="circuit-path" d="M 250 160 H 400 V 100" stroke="#00F3FF" stroke-width="1.5" id="cp5"/>
-          <!-- Final run -->
-          <path class="circuit-path" d="M 400 100 H 520 V 60 H 670" stroke="#D4F000" stroke-width="1.5" id="cp6"/>
-          <path class="circuit-path" d="M 520 100 V 140 H 620" stroke="#D4F000" stroke-width="1" opacity="0.6" id="cp7"/>
-          <!-- Sub traces -->
-          <path class="circuit-path" d="M 200 40 V 20 H 340" stroke="#D4F000" stroke-width="0.8" opacity="0.4" id="cp8"/>
-          <path class="circuit-path" d="M 200 160 V 180 H 380" stroke="#D4F000" stroke-width="0.8" opacity="0.4" id="cp9"/>
-
-          <!-- Nodes -->
-          <g class="circuit-node" id="cn1"><circle cx="30" cy="100" r="5" fill="#D4F000"/><circle cx="30" cy="100" r="10" stroke="#D4F000" stroke-width="0.5" opacity="0.4"/></g>
-          <g class="circuit-node" id="cn2"><circle cx="120" cy="100" r="5" fill="#D4F000"/><circle cx="120" cy="100" r="12" stroke="#D4F000" stroke-width="0.5" opacity="0.3"/></g>
-          <g class="circuit-node" id="cn3"><circle cx="250" cy="40" r="4" fill="#00F3FF"/><circle cx="250" cy="40" r="9" stroke="#00F3FF" stroke-width="0.5" opacity="0.4"/></g>
-          <g class="circuit-node" id="cn4"><circle cx="250" cy="160" r="4" fill="#00F3FF"/><circle cx="250" cy="160" r="9" stroke="#00F3FF" stroke-width="0.5" opacity="0.4"/></g>
-          <g class="circuit-node" id="cn5"><circle cx="400" cy="100" r="6" fill="#D4F000"/><circle cx="400" cy="100" r="14" stroke="#D4F000" stroke-width="0.5" opacity="0.3"/></g>
-          <g class="circuit-node" id="cn6"><circle cx="520" cy="100" r="4" fill="#D4F000"/></g>
-          <g class="circuit-node" id="cn7"><circle cx="670" cy="60" r="5" fill="#D4F000"/><circle cx="670" cy="60" r="11" stroke="#D4F000" stroke-width="0.5" opacity="0.35"/></g>
-        </svg>
-      </div>
-
-      <div class="circuit-bottom">
-        <div class="label-tag">READY TO DEPLOY</div>
-        <h2 class="circuit-tagline">ZERO CLOUD.<br><span class="neon">PURE SPEED.</span></h2>
-        <p class="circuit-sub">Falcon runs entirely on-device. No latency tax, no cloud dependency, no privacy risk. Start the backend, open the dashboard, and watch it go.</p>
-        <div class="btn-row">
-          <a href="http://localhost:8501" target="_blank" rel="noopener noreferrer" class="btn-primary">LAUNCH DASHBOARD</a>
-          <a href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer" class="btn-ghost">API DOCS</a>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- ── FOOTER ── -->
-  <footer>
-    <span>FALCON · EDGE AI DRIVER COMPANION</span>
-    <span>PREDUSK INTERNSHIP · 2026</span>
-    <span>ON-DEVICE · ZERO CLOUD</span>
-  </footer>
-
-  <script>
-    // ── 1. LENIS SMOOTH SCROLL
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-      wheelMultiplier: 0.8,
-    });
-    function rafLoop(time) { lenis.raf(time); requestAnimationFrame(rafLoop); }
-    requestAnimationFrame(rafLoop);
-
-    // ── 2. CUSTOM CURSOR
-    const cursor = document.getElementById('cursor');
-    const cursorRing = document.getElementById('cursor-ring');
-    let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
-    document.addEventListener('mousemove', e => {
-      mouseX = e.clientX; mouseY = e.clientY;
-      cursor.style.left = mouseX + 'px';
-      cursor.style.top  = mouseY + 'px';
-    });
-    function animateCursorRing() {
-      ringX += (mouseX - ringX) * 0.12;
-      ringY += (mouseY - ringY) * 0.12;
-      cursorRing.style.left = ringX + 'px';
-      cursorRing.style.top  = ringY + 'px';
-      requestAnimationFrame(animateCursorRing);
+const preTL = gsap.timeline({ delay: 0.3 });
+preTL
+  .to(preLetters, { y: 0, duration: 1.2, ease: 'expo.out', stagger: 0.06 })
+  .to({}, { duration: 0.8 })
+  .to(preLetters, { y: '-120%', duration: 0.8, ease: 'expo.in', stagger: 0.04 }, '-=0.2')
+  .to(prePanel, {
+    scaleY: 0,
+    transformOrigin: 'top',
+    duration: 0.9,
+    ease: 'expo.inOut',
+    onComplete: () => {
+      preloader.style.pointerEvents = 'none';
+      preloader.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      initScrollAnimations();
     }
-    animateCursorRing();
+  }, '-=0.2');
 
-    // ── 3. PRELOADER
-    const plBar = document.getElementById('pl-bar');
-    const plFal = document.getElementById('pl-fal');
-    const plCon = document.getElementById('pl-con');
-    const preloader = document.getElementById('preloader');
+document.body.style.overflow = 'hidden';
 
-    gsap.set([plFal, plCon], { yPercent: 110 });
-    const tlPre = gsap.timeline({
-      onComplete: () => {
-        gsap.to(preloader, {
-          yPercent: -100, duration: 1, ease: 'power3.inOut',
-          onComplete: () => { preloader.style.display = 'none'; initScrollAnimations(); }
-        });
+/* ============================================================
+   4. HERO — AR HUD SCROLL ANIMATION
+============================================================ */
+function initScrollAnimations() {
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Parallax bg text (slower than scroll)
+  gsap.to('#heroBgText', {
+    y: '-20%',
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '#hero',
+      start: 'top top',
+      end: 'bottom top',
+      scrub: 1,
+    }
+  });
+
+  // Cabin scale-in on load
+  gsap.from('#cabin', { scale: 0.92, opacity: 0, duration: 1.2, ease: 'expo.out', delay: 0.1 });
+
+  // HUD reveal sequence tied to scroll progress
+  const hudTL = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#hero',
+      start: 'top top',
+      end: 'bottom top',
+      scrub: 0.8,
+    }
+  });
+  // Phase 1: bbox corners snap in
+  hudTL
+    .to(['#bbc-tl', '#bbc-tr', '#bbc-bl', '#bbc-br'], {
+      opacity: 1, duration: 0.15, stagger: 0.05
+    }, 0.05)
+    // Phase 2: face mesh grid appears
+    .to('#faceMesh', { opacity: 1, duration: 0.2 }, 0.25)
+    // Phase 3: scanline sweep
+    .to('#scanline', { opacity: 1, duration: 0.1 }, 0.35)
+    .to('#scanline', { top: '64%', duration: 0.4, ease: 'none' }, 0.35)
+    .to('#scanline', { opacity: 0, duration: 0.1 }, 0.75)
+    // Phase 4: data panels slide in
+    .to('#hudLeft',   { opacity: 1, x: 0,   duration: 0.2 }, 0.5)
+    .to('#hudRight',  { opacity: 1, x: 0,   duration: 0.2 }, 0.55)
+    // Phase 5: status badge
+    .to('#hudStatus', { opacity: 1, duration: 0.2 }, 0.7);
+
+  // EAR value flicker (cosmetic)
+  setInterval(() => {
+    const earEl = document.getElementById('earVal');
+    const confEl = document.getElementById('confVal');
+    if (earEl) earEl.textContent = (0.28 + Math.random() * 0.06).toFixed(3);
+    if (confEl) confEl.textContent = (95 + Math.random() * 3).toFixed(1) + '%';
+  }, 1800);
+
+  /* ============================================================
+     5. MISSION — WORD-BY-WORD SCROLL HIGHLIGHT
+  ============================================================ */
+  const words = document.querySelectorAll('#missionWords .word');
+  words.forEach((word, i) => {
+    gsap.to(word, {
+      color: i === words.length - 3 ? '#D4F000' : // "ZERO"
+             i === words.length - 2 ? '#D4F000' : // "CLOUD"
+             i === words.length - 1 ? '#D4F000' : // "LATENCY."
+             '#F5F5F5',
+      duration: 0.01,
+      scrollTrigger: {
+        trigger: '#mission',
+        start: `top+=${i * 6}% center`,
+        end:   `top+=${i * 6 + 8}% center`,
+        scrub: 0.3,
+        toggleClass: { targets: word, className: 'lit' }
       }
     });
-    tlPre
-      .to(plFal, { yPercent: 0, duration: 0.7, ease: 'power3.out' }, 0.2)
-      .to(plCon, { yPercent: 0, duration: 0.7, ease: 'power3.out' }, 0.35)
-      .to(plBar, { width: '100%', duration: 1.2, ease: 'power2.inOut' }, 0.4);
+  });
 
-    // ── 4. SCROLL ANIMATIONS (init after preloader)
-    function initScrollAnimations() {
-      gsap.registerPlugin(ScrollTrigger);
+  /* ============================================================
+     6. DETECTION BLOCKS — REVEAL ON SCROLL
+  ============================================================ */
+  gsap.from('.detect-block', {
+    y: 60, opacity: 0,
+    stagger: 0.15,
+    duration: 1.2,
+    ease: 'expo.out',
+    scrollTrigger: {
+      trigger: '#detection',
+      start: 'top 75%',
+      toggleActions: 'play none none none'
+    }
+  });
 
-      // ── 4A. HERO — parallax bg word + AR HUD assembly
-      const bgWord = document.getElementById('heroBgWord');
-      const carCabin = document.getElementById('carCabin');
+  /* ============================================================
+     7. HORIZONTAL TECH SHOWCASE
+  ============================================================ */
+  const track = document.getElementById('techTrack');
+  const trackWidth = track.scrollWidth - track.parentElement.offsetWidth;
 
-      const heroTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: '#hero',
-          start: 'top top',
-          end: 'bottom bottom',
-          scrub: 1,
-        }
+  gsap.to(track, {
+    x: -trackWidth,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '#tech-showcase',
+      start: 'top top',
+      end: 'bottom top',
+      scrub: 1,
+      pin: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+    }
+  });
+
+  // Animate bar fills when cards enter view
+  document.querySelectorAll('.tech-card').forEach(card => {
+    const fill = card.querySelector('.tc-bar-fill');
+    const target = fill.style.width;
+    fill.style.width = '0%';
+    ScrollTrigger.create({
+      trigger: card,
+      start: 'left 80%',
+      containerAnimation: gsap.getById ? undefined : undefined,
+      onEnter: () => gsap.to(fill, { width: target, duration: 1.2, ease: 'expo.out' })
+    });
+  });
+
+  /* 3D tilt on mousemove for cards */
+  document.querySelectorAll('.tech-card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width  - 0.5) * 18;
+      const y = ((e.clientY - rect.top)  / rect.height - 0.5) * 14;
+      gsap.to(card, {
+        rotateY: x, rotateX: -y,
+        transformPerspective: 800,
+        duration: 0.4,
+        ease: 'power2.out'
       });
+    });
+    card.addEventListener('mouseleave', () => {
+      gsap.to(card, { rotateY: 0, rotateX: 0, duration: 0.6, ease: 'elastic.out(1, 0.5)' });
+    });
+  });
 
-      // Parallax: bg word moves up slower than scroll
-      heroTl.to(bgWord, { yPercent: -30, ease: 'none' }, 0);
+  /* ============================================================
+     8. CIRCUIT SVG DRAW-ON
+  ============================================================ */
+  const paths = ['#cp1','#cp2','#cp3','#cp4','#cp5','#cp6','#cp7','#cp8','#cp9'];
+  const nodes = ['#cn1','#cn2','#cn3','#cn4','#cn5','#cn6','#cn7','#cn8'];
+  const rings = ['#nr1','#nr2','#nr3'];
 
-      // Cabin slight zoom
-      heroTl.to(carCabin, { scale: 1.04, ease: 'none' }, 0);
+  // Set initial dasharray/dashoffset
+  paths.forEach(id => {
+    const el = document.querySelector(id);
+    if (!el) return;
+    const len = el.getTotalLength ? el.getTotalLength() : 200;
+    el.style.strokeDasharray  = len;
+    el.style.strokeDashoffset = len;
+  });
 
-      // HUD corners snap in
-      heroTl
-        .to('#hud-tl', { opacity: 1, ease: 'none' }, 0.05)
-        .to('#hud-tr', { opacity: 1, ease: 'none' }, 0.08)
-        .to('#hud-bl', { opacity: 1, ease: 'none' }, 0.11)
-        .to('#hud-br', { opacity: 1, ease: 'none' }, 0.14);
+  nodes.forEach(id => gsap.set(id, { scale: 0, transformOrigin: 'center', opacity: 0 }));
+  rings.forEach(id => gsap.set(id, { opacity: 0, scale: 0.5, transformOrigin: 'center' }));
 
-      // Face mesh draws in
-      heroTl.to('#hudFaceMesh', { opacity: 1, ease: 'none' }, 0.2);
+  const circuitTL = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#signature',
+      start: 'top 70%',
+      toggleActions: 'play none none none'
+    }
+  });
 
-      // Scanline sweeps
-      heroTl
-        .to('#hudScanline', { opacity: 1, ease: 'none' }, 0.25)
-        .to('#hudScanline', { top: '65%', ease: 'none' }, 0.25)
-        .to('#hudScanline', { top: '20%', ease: 'none' }, 0.5);
+  paths.forEach((id, i) => {
+    circuitTL.to(id, {
+      strokeDashoffset: 0,
+      duration: 0.5,
+      ease: 'power2.inOut',
+    }, i * 0.12);
+  });
+  nodes.forEach((id, i) => {
+    circuitTL.to(id, { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(2)' }, i * 0.1 + 0.3);
+  });
+  rings.forEach((id, i) => {
+    circuitTL.to(id, {
+      opacity: 0.6, scale: 1.8,
+      duration: 1.5, ease: 'power2.out',
+      repeat: -1, yoyo: true
+    }, i * 0.3 + 0.8);
+  });
 
-      // Data panels slide in
-      heroTl
-        .to('#hudDataLeft',  { opacity: 1, x: 0, ease: 'none' }, 0.35)
-        .to('#hudDataRight', { opacity: 1, x: 0, ease: 'none' }, 0.40);
-
-      // Text fade out as HUD takes over
-      heroTl
-        .to('#heroTextLeft',  { opacity: 0, yPercent: -10, ease: 'none' }, 0.6)
-        .to('#heroTextRight', { opacity: 0, yPercent: -10, ease: 'none' }, 0.65);
-
-      // ── 4B. MANIFESTO — word-by-word highlight
-      const words = document.querySelectorAll('.manifesto-word');
-      const totalWords = words.length;
-
-      ScrollTrigger.create({
-        trigger: '#manifesto',
-        start: 'top 80%',
-        end: 'bottom 20%',
-        scrub: 0.5,
-        onUpdate: self => {
-          const progress = self.progress;
-          words.forEach((word, i) => {
-            const threshold = i / totalWords;
-            const blazeThreshold = (i + 0.5) / totalWords;
-            if (progress > blazeThreshold) {
-              word.classList.add('blazing');
-              word.classList.remove('lit');
-            } else if (progress > threshold) {
-              word.classList.add('lit');
-              word.classList.remove('blazing');
-            } else {
-              word.classList.remove('lit', 'blazing');
-            }
-          });
-        }
-      });
-
-      // ── 4C. DETECTION — hover interactions (pure CSS + tiny JS for dim effect)
-      const blockDrowsy   = document.getElementById('blockDrowsy');
-      const blockDistract = document.getElementById('blockDistract');
-
-      blockDrowsy.addEventListener('mouseenter', () => blockDistract.style.opacity = '0.35');
-      blockDrowsy.addEventListener('mouseleave', () => blockDistract.style.opacity = '1');
-      blockDistract.addEventListener('mouseenter', () => blockDrowsy.style.opacity = '0.35');
-      blockDistract.addEventListener('mouseleave', () => blockDrowsy.style.opacity = '1');
-
-      // Scroll-in animation
-      gsap.from([blockDrowsy, blockDistract], {
-        opacity: 0, y: 60, stagger: 0.15, duration: 1, ease: 'power3.out',
-        scrollTrigger: { trigger: '#detection', start: 'top 75%' }
-      });
-
-      // ── 4D. HORIZONTAL TECH SHOWCASE
-      const track = document.getElementById('techTrack');
-      const trackWidth = track.scrollWidth;
-      const viewportW  = window.innerWidth;
-      const moveAmount = trackWidth - viewportW + 64;
-
-      gsap.to(track, {
-        x: -moveAmount,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#tech-showcase',
-          start: 'top top',
-          end: 'bottom bottom',
-          scrub: 1,
-          pin: false,
-        }
-      });
-
-      // 3D card tilt on mousemove
-      document.querySelectorAll('.tech-card').forEach(card => {
-        card.addEventListener('mousemove', e => {
-          const rect = card.getBoundingClientRect();
-          const cx = rect.left + rect.width  / 2;
-          const cy = rect.top  + rect.height / 2;
-          const rx = (e.clientY - cy) / (rect.height / 2) * -8;
-          const ry = (e.clientX - cx) / (rect.width  / 2) *  8;
-          card.style.transform = `perspective(600px) rotateX(${rx}deg) rotateY(${ry}deg) scale3d(1.02,1.02,1.02)`;
-          card.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width  * 100) + '%');
-          card.style.setProperty('--my', ((e.clientY - rect.top)  / rect.height * 100) + '%');
-        });
-        card.addEventListener('mouseleave', () => {
-          card.style.transform = '';
-        });
-      });
-
-      // ── 4E. CIRCUIT SIGNATURE — DrawSVG path reveal
-      const paths = ['#cp1','#cp2','#cp3','#cp4','#cp5','#cp6','#cp7','#cp8','#cp9'];
-      const nodes = ['#cn1','#cn2','#cn3','#cn4','#cn5','#cn6','#cn7'];
-
-      // Fallback: animate stroke-dashoffset manually if DrawSVGPlugin not available
-      paths.forEach(id => {
-        const el = document.querySelector(id);
-        if (!el) return;
-        const len = el.getTotalLength ? el.getTotalLength() : 500;
-        el.style.strokeDasharray  = len;
-        el.style.strokeDashoffset = len;
-      });
-
-      const circuitTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: '#circuit',
-          start: 'top 70%',
-          end: 'top 10%',
-          scrub: 0.8,
-        }
-      });
-
-      paths.forEach((id, i) => {
-        circuitTl.to(id, { strokeDashoffset: 0, ease: 'none', duration: 0.5 }, i * 0.15);
-      });
-      nodes.forEach((id, i) => {
-        circuitTl.to(id, { opacity: 1, scale: 1, transformOrigin: 'center', duration: 0.2, ease: 'back.out(2)' }, i * 0.2 + 0.1);
-      });
-
-      // Circuit bottom text reveal
-      gsap.from('.circuit-tagline', {
-        opacity: 0, yPercent: 30, duration: 1.2, ease: 'power3.out',
-        scrollTrigger: { trigger: '#circuit', start: 'top 60%' }
-      });
-      gsap.from('.circuit-sub', {
-        opacity: 0, y: 20, duration: 1, delay: 0.2, ease: 'power2.out',
-        scrollTrigger: { trigger: '#circuit', start: 'top 55%' }
-      });
-      gsap.from('.btn-row', {
-        opacity: 0, y: 20, duration: 1, delay: 0.4, ease: 'power2.out',
-        scrollTrigger: { trigger: '#circuit', start: 'top 50%' }
-      });
-
-    } // end initScrollAnimations
-
-    // ── 5. RESIZE HANDLER
-    window.addEventListener('resize', () => { ScrollTrigger.refresh(); });
-
-  </script>
+  // Signature headline reveal
+  gsap.from('.sig-headline', {
+    y: 40, opacity: 0,
+    duration: 1.2,
+    ease: 'expo.out',
+    scrollTrigger: {
+      trigger: '#signature',
+      start: 'top 65%',
+      toggleActions: 'play none none none'
+    }
+  });
+  gsap.from('.sig-sub', {
+    y: 20, opacity: 0,
+    duration: 1,
+    delay: 0.2,
+    ease: 'expo.out',
+    scrollTrigger: {
+      trigger: '#signature',
+      start: 'top 65%',
+      toggleActions: 'play none none none'
+    }
+  });
+  gsap.from('.sig-ctas', {
+    y: 20, opacity: 0,
+    duration: 1,
+    delay: 0.35,
+    ease: 'expo.out',
+    scrollTrigger: {
+      trigger: '#signature',
+      start: 'top 65%',
+      toggleActions: 'play none none none'
+    }
+  });
+}
+</script>
 </body>
 </html>
