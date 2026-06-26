@@ -195,3 +195,6 @@ __pycache__/
 *.mp4
 /.venv-backend
 /.venv-frontend
+/frontend/.next
+/frontend/node_modules/.bin
+/frontend/node_modules
