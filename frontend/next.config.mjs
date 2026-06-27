@@ -11,10 +11,12 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        // Target specifically the models folder or all static files
+        source: '/models/:path*',
         headers: [
-          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
-          { key: 'Cross-Origin-Embedder-Policy', value: 'require-corp' },
+          // Allow Streamlit (or any local client) to fetch the 3D model
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS' },
         ],
       },
     ];
