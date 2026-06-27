@@ -24,7 +24,7 @@ import streamlit as st
 from PIL import Image
 
 # ── Config ────────────────────────────────────────────────────────────────────
-BACKEND_URL      = "http://0.0.0.1:8000"
+BACKEND_URL      = "http://127.0.0.1:8000"
 HEALTH_TTL_SEC  = 10        # re-check backend every 10 s, not every render
 NEON_YELLOW      = "#D4F000"
 NEON_CYAN        = "#00F3FF"
