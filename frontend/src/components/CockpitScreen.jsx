@@ -2,14 +2,15 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-const BACKEND_URL  = process.env.NEXT_PUBLIC_BACKEND_URL  || 'http://localhost:8000';
+const BACKEND_URL   = process.env.NEXT_PUBLIC_BACKEND_URL  || 'http://localhost:8000';
 const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'http://localhost:8501';
 
 const POLL_INTERVAL = 1500; // ms between inference polls
 
-// ─── tiny helpers ────────────────────────────────────────────────────────────
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
 function StatusDot({ ok }) {
-  const color = ok === null ? '#555' : ok ? '#D4F000' : '#ff4444';
+  const color  = ok === null ? '#555' : ok ? '#D4F000' : '#ff4444';
   const shadow = ok ? '0 0 8px #D4F000, 0 0 16px rgba(212,240,0,0.4)' : 'none';
   return (
     <span
@@ -78,7 +79,6 @@ function MetricCard({ label, value, unit = '', accent = false, alert = false }) 
 
 function AlertBanner({ level, message }) {
   if (!level || level === 'OK') return null;
-  const isWarning = level === 'WARNING';
   const isCritical = level === 'CRITICAL';
   return (
     <div
@@ -113,14 +113,13 @@ function AlertBanner({ level, message }) {
   );
 }
 
-// ─── HUD bezel corners ────────────────────────────────────────────────────────
 function BezelCorners({ active }) {
   const color = active ? '#00F3FF' : 'rgba(0,243,255,0.2)';
-  const size = 18;
+  const size  = 18;
   const corners = [
-    { top: 0, left: 0, borderTop: `1.5px solid ${color}`, borderLeft: `1.5px solid ${color}` },
-    { top: 0, right: 0, borderTop: `1.5px solid ${color}`, borderRight: `1.5px solid ${color}` },
-    { bottom: 0, left: 0, borderBottom: `1.5px solid ${color}`, borderLeft: `1.5px solid ${color}` },
+    { top: 0,    left:  0, borderTop:    `1.5px solid ${color}`, borderLeft:  `1.5px solid ${color}` },
+    { top: 0,    right: 0, borderTop:    `1.5px solid ${color}`, borderRight: `1.5px solid ${color}` },
+    { bottom: 0, left:  0, borderBottom: `1.5px solid ${color}`, borderLeft:  `1.5px solid ${color}` },
     { bottom: 0, right: 0, borderBottom: `1.5px solid ${color}`, borderRight: `1.5px solid ${color}` },
   ];
   return (
@@ -140,25 +139,40 @@ function BezelCorners({ active }) {
   );
 }
 
+// ─── capture a frame from the webcam as a base64 JPEG ─────────────────────────
+async function captureFrame(videoEl) {
+  if (!videoEl || videoEl.readyState < 2) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width  = videoEl.videoWidth  || 320;
+  canvas.height = videoEl.videoHeight || 240;
+  canvas.getContext('2d').drawImage(videoEl, 0, 0);
+  // strip the "data:image/jpeg;base64," prefix — backend does its own split
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
+
 // ─── main component ───────────────────────────────────────────────────────────
 export default function CockpitScreen() {
-  const sectionRef    = useRef(null);
-  const pollRef       = useRef(null);
+  const sectionRef   = useRef(null);
+  const videoRef     = useRef(null);   // hidden <video> for webcam
+  const streamRef    = useRef(null);   // MediaStream handle
+  const pollRef      = useRef(null);   // setInterval handle
 
-  const [backendOk,   setBackendOk]   = useState(null);   // null | true | false
-  const [inferring,   setInferring]   = useState(false);  // live poll active
-  const [metrics,     setMetrics]     = useState(null);   // last inference response
-  const [fps,         setFps]         = useState(0);      // measured client-side fps
-  const [latency,     setLatency]     = useState(null);   // ms round-trip
+  const [backendOk,   setBackendOk]   = useState(null);
+  const [cameraOk,    setCameraOk]    = useState(null);  // null | true | false
+  const [inferring,   setInferring]   = useState(false);
+  const [metrics,     setMetrics]     = useState(null);
+  const [latency,     setLatency]     = useState(null);
   const [alertState,  setAlertState]  = useState({ level: null, message: '' });
   const [frameCount,  setFrameCount]  = useState(0);
+  const [fps,         setFps]         = useState(0);
+  const [camError,    setCamError]    = useState('');
 
-  // ── backend health ping ────────────────────────────────────────────────────
+  // ── backend health ─────────────────────────────────────────────────────────
   const ping = useCallback(async () => {
     try {
       const r = await fetch(`${BACKEND_URL}/health`, {
         signal: AbortSignal.timeout(3000),
-        cache: 'no-store',
+        cache:  'no-store',
       });
       setBackendOk(r.ok);
       return r.ok;
@@ -174,65 +188,116 @@ export default function CockpitScreen() {
     return () => clearInterval(id);
   }, [ping]);
 
-  // ── live inference poll ────────────────────────────────────────────────────
+  // ── webcam ─────────────────────────────────────────────────────────────────
+  const startCamera = useCallback(async () => {
+    if (streamRef.current) return true; // already running
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCameraOk(true);
+      setCamError('');
+      return true;
+    } catch (err) {
+      setCameraOk(false);
+      setCamError(err?.message || 'Camera permission denied');
+      return false;
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraOk(null);
+  }, []);
+
+  // ── inference — POST /infer with base64 frame ─────────────────────────────
   const runInference = useCallback(async () => {
+    const frame = await captureFrame(videoRef.current);
+    if (!frame) return; // camera not ready yet
+
     const t0 = performance.now();
     try {
       const r = await fetch(`${BACKEND_URL}/infer`, {
-        signal: AbortSignal.timeout(2000),
-        cache: 'no-store',
+        method:  'POST',                        // ← was wrongly called as GET before
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ frame }),     // matches InferenceRequest schema
+        signal:  AbortSignal.timeout(4000),
+        cache:   'no-store',
       });
-      if (!r.ok) return;
-      const data = await r.json();
+
+      if (!r.ok) {
+        console.warn(`[Falcon] /infer returned ${r.status}`);
+        return;
+      }
+
+      const data    = await r.json();
       const elapsed = Math.round(performance.now() - t0);
+
       setLatency(elapsed);
       setMetrics(data);
       setFrameCount(c => c + 1);
 
-      // derive alert from response
-      const drowsy   = data?.drowsiness_score ?? data?.drowsiness ?? 0;
-      const distract = data?.distraction_score ?? data?.distraction ?? 0;
+      // alert logic
+      const drowsy   = typeof data?.drowsiness_confidence === 'number' ? data.drowsiness_confidence : 0;
+      const distract = typeof data?.distraction_confidence === 'number' ? data.distraction_confidence : 0;
       const state    = data?.driver_state ?? '';
 
-      if (state.toLowerCase().includes('critical') || drowsy > 0.85 || distract > 0.85) {
+      if (state === 'critical' || drowsy > 0.85 || distract > 0.85) {
         setAlertState({ level: 'CRITICAL', message: state || 'Driver impairment detected' });
-      } else if (state.toLowerCase().includes('warn') || drowsy > 0.55 || distract > 0.55) {
+      } else if (state === 'drowsy' || state === 'distracted' || drowsy > 0.55 || distract > 0.55) {
         setAlertState({ level: 'WARNING', message: state || 'Elevated risk detected' });
       } else {
         setAlertState({ level: 'OK', message: '' });
       }
-    } catch {
-      // silent — backend may be processing
+    } catch (err) {
+      // timeout or network error — log once, stay quiet in UI
+      console.warn('[Falcon] inference error:', err?.message);
     }
   }, []);
 
-  // FPS counter — increments on each successful frame
+  // ── FPS counter ────────────────────────────────────────────────────────────
   useEffect(() => {
     const id = setInterval(() => {
-      setFps(prev => {
-        const next = frameCount;
-        setFrameCount(0);
-        return Math.round((1000 / POLL_INTERVAL) * next);
-      });
+      setFps(frameCount);
+      setFrameCount(0);
     }, 1000);
     return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frameCount]);
 
-  const startPolling = useCallback(() => {
+  // ── start / stop polling ───────────────────────────────────────────────────
+  const startPolling = useCallback(async () => {
     if (pollRef.current) return;
+    const camReady = await startCamera();
+    if (!camReady) return;
     setInferring(true);
-    runInference(); // immediate first call
+    runInference();
     pollRef.current = setInterval(runInference, POLL_INTERVAL);
-  }, [runInference]);
+  }, [runInference, startCamera]);
 
   const stopPolling = useCallback(() => {
     clearInterval(pollRef.current);
     pollRef.current = null;
     setInferring(false);
+    stopCamera();
     setAlertState({ level: null, message: '' });
-  }, []);
+    setMetrics(null);
+    setLatency(null);
+  }, [stopCamera]);
 
-  useEffect(() => () => clearInterval(pollRef.current), []);
+  useEffect(() => () => {
+    clearInterval(pollRef.current);
+    stopCamera();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── GSAP section reveal ────────────────────────────────────────────────────
   useEffect(() => {
@@ -256,17 +321,18 @@ export default function CockpitScreen() {
   }, []);
 
   // ── derived display values ─────────────────────────────────────────────────
-  const drowsinessRaw  = metrics?.drowsiness_score ?? metrics?.drowsiness;
-  const distractionRaw = metrics?.distraction_score ?? metrics?.distraction;
-  const driverState    = metrics?.driver_state ?? metrics?.state;
-  const alertLevel     = metrics?.alert_level;
-  const earValue       = metrics?.ear;
+  const drowsinessLabel  = metrics?.drowsiness ?? '—';
+  const distractionLabel = metrics?.distraction ?? '—';
+  const drowsinessConf   = metrics?.drowsiness_confidence;
+  const distractionConf  = metrics?.distraction_confidence;
+  const driverState      = metrics?.driver_state ?? (inferring ? 'ACTIVE' : '—');
+  const alertLevel       = metrics?.alert_level;
 
-  const fmt = (v) => (typeof v === 'number' ? (v * 100).toFixed(1) + '%' : '—');
+  const fmtConf = (v) =>
+    typeof v === 'number' ? `${(v * 100).toFixed(1)}%` : '—';
 
   return (
     <>
-      {/* keyframe for critical pulse */}
       <style>{`
         @keyframes alertPulse {
           from { opacity: 1; }
@@ -280,7 +346,21 @@ export default function CockpitScreen() {
           0%, 100% { opacity: 1; }
           50%       { opacity: 0.4; }
         }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
+
+      {/* hidden webcam video element — not shown to user, only used for frame capture */}
+      <video
+        ref={videoRef}
+        muted
+        playsInline
+        autoPlay
+        aria-hidden="true"
+        style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+      />
 
       <section
         ref={sectionRef}
@@ -296,7 +376,7 @@ export default function CockpitScreen() {
           overflow: 'hidden',
         }}
       >
-        {/* ── section label + heading ─────────────────────────────────────── */}
+        {/* section label + heading */}
         <p className="section-label" style={{ marginBottom: 16 }}>/ 05 LIVE COCKPIT</p>
         <h2
           className="font-display"
@@ -314,7 +394,7 @@ export default function CockpitScreen() {
           <span className="cyan cyan-glow">MONITOR</span>
         </h2>
 
-        {/* ── status row ──────────────────────────────────────────────────── */}
+        {/* status row */}
         <div
           style={{
             display: 'flex',
@@ -342,6 +422,26 @@ export default function CockpitScreen() {
               BACKEND {backendOk === null ? 'CHECKING…' : backendOk ? 'ONLINE' : 'OFFLINE'}
             </span>
           </div>
+
+          {/* camera pill */}
+          {cameraOk !== null && (
+            <div
+              className="glass"
+              style={{
+                padding: '10px 18px',
+                display: 'flex', alignItems: 'center', gap: 10,
+                border: `1px solid ${cameraOk ? 'rgba(0,243,255,0.15)' : 'rgba(255,68,68,0.15)'}`,
+              }}
+            >
+              <StatusDot ok={cameraOk} />
+              <span
+                className="font-mono"
+                style={{ fontSize: '0.62rem', letterSpacing: '0.16em', color: '#666' }}
+              >
+                CAMERA {cameraOk ? 'ACTIVE' : 'ERROR'}
+              </span>
+            </div>
+          )}
 
           {/* inference toggle */}
           <button
@@ -414,10 +514,29 @@ export default function CockpitScreen() {
           </a>
         </div>
 
-        {/* ── alert banner ────────────────────────────────────────────────── */}
+        {/* camera error banner */}
+        {camError && (
+          <div
+            style={{
+              padding: '10px 16px',
+              marginBottom: 16,
+              background: 'rgba(255,68,68,0.06)',
+              border: '1px solid rgba(255,68,68,0.2)',
+              borderRadius: 4,
+              fontFamily: 'var(--font-mono, monospace)',
+              fontSize: '0.65rem',
+              color: '#ff6666',
+              letterSpacing: '0.12em',
+            }}
+          >
+            CAMERA ERROR · {camError}
+          </div>
+        )}
+
+        {/* alert banner */}
         <AlertBanner level={alertState.level} message={alertState.message} />
 
-        {/* ── metrics row ─────────────────────────────────────────────────── */}
+        {/* metrics row — only when inferring */}
         {inferring && (
           <div
             style={{
@@ -427,24 +546,22 @@ export default function CockpitScreen() {
           >
             <MetricCard
               label="DRIVER STATE"
-              value={driverState ?? (inferring ? 'ACTIVE' : '—')}
+              value={driverState?.toUpperCase()}
               accent={!alertState.level || alertState.level === 'OK'}
               alert={alertState.level === 'CRITICAL'}
             />
             <MetricCard
               label="DROWSINESS"
-              value={fmt(drowsinessRaw)}
-              alert={drowsinessRaw > 0.55}
+              value={`${drowsinessLabel?.toUpperCase()} ${fmtConf(drowsinessConf)}`}
+              alert={drowsinessConf > 0.55}
             />
             <MetricCard
               label="DISTRACTION"
-              value={fmt(distractionRaw)}
-              alert={distractionRaw > 0.55}
+              value={`${distractionLabel?.toUpperCase()} ${fmtConf(distractionConf)}`}
+              alert={distractionConf > 0.55}
             />
             <MetricCard label="LATENCY" value={latency} unit="ms" accent />
-            {earValue != null && (
-              <MetricCard label="EAR RATIO" value={earValue?.toFixed(3)} />
-            )}
+            <MetricCard label="FPS" value={fps} accent />
             {alertLevel != null && (
               <MetricCard
                 label="ALERT LEVEL"
@@ -456,7 +573,7 @@ export default function CockpitScreen() {
           </div>
         )}
 
-        {/* ── iframe / offline state ──────────────────────────────────────── */}
+        {/* cockpit frame */}
         <div
           style={{
             position: 'relative',
@@ -471,7 +588,6 @@ export default function CockpitScreen() {
             transition: 'border-color 0.5s, box-shadow 0.5s',
           }}
         >
-          {/* bezel corners */}
           <BezelCorners active={inferring} />
 
           {/* top bar */}
@@ -490,23 +606,17 @@ export default function CockpitScreen() {
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
             <span
               className="font-mono"
-              style={{
-                fontSize: '0.58rem', color: '#3a3a3a',
-                marginLeft: 12, letterSpacing: '0.16em',
-              }}
+              style={{ fontSize: '0.58rem', color: '#3a3a3a', marginLeft: 12, letterSpacing: '0.16em' }}
             >
               FALCON COCKPIT · {DASHBOARD_URL}
             </span>
-
-            {/* live indicator */}
             {inferring && (
               <span
                 style={{
                   marginLeft: 'auto',
                   display: 'flex', alignItems: 'center', gap: 6,
                   fontFamily: 'var(--font-mono, monospace)',
-                  fontSize: '0.55rem', letterSpacing: '0.16em',
-                  color: '#D4F000',
+                  fontSize: '0.55rem', letterSpacing: '0.16em', color: '#D4F000',
                 }}
               >
                 <span
@@ -535,21 +645,14 @@ export default function CockpitScreen() {
                 <line x1="13" y1="13" x2="27" y2="27" stroke="#ff4444" strokeWidth="1.5" />
                 <line x1="27" y1="13" x2="13" y2="27" stroke="#ff4444" strokeWidth="1.5" />
               </svg>
-              <p
-                className="font-display"
-                style={{ fontSize: '1.5rem', color: '#F5F5F5' }}
-              >
+              <p className="font-display" style={{ fontSize: '1.5rem', color: '#F5F5F5' }}>
                 BACKEND OFFLINE
               </p>
               <p
                 className="font-body"
-                style={{
-                  fontSize: '0.85rem', color: '#555',
-                  textAlign: 'center', maxWidth: '36ch',
-                }}
+                style={{ fontSize: '0.85rem', color: '#555', textAlign: 'center', maxWidth: '36ch' }}
               >
-                Start the FastAPI backend on port 8000, then this panel
-                will reconnect automatically.
+                Start the FastAPI backend on port 8000, then this panel will reconnect automatically.
               </p>
               <code
                 className="font-mono"
@@ -565,7 +668,6 @@ export default function CockpitScreen() {
             </div>
           ) : (
             <div style={{ position: 'relative' }}>
-              {/* scanline effect when inferring */}
               {inferring && (
                 <div
                   aria-hidden="true"
@@ -592,7 +694,7 @@ export default function CockpitScreen() {
           )}
         </div>
 
-        {/* ── background ghost text ───────────────────────────────────────── */}
+        {/* ghost bg text */}
         <div
           aria-hidden="true"
           style={{
