@@ -198,3 +198,5 @@ __pycache__/
 /frontend/.next
 /frontend/node_modules/.bin
 /frontend/node_modules
+
+*.glb
