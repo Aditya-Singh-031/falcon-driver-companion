@@ -21,7 +21,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Falcon Edge AI API", lifespan=lifespan)
 
-# --- NEW CORS MIDDLEWARE ---
+# ── CORS ────────────────────────────────────────────────────────────────────────
+# The Next.js frontend runs on :3000 (dev) and the Streamlit dashboard on :8501.
+# All four origins (with both localhost / 127.0.0.1 variants) are allowed so that
+# the browser's CORS preflight for POST /infer always succeeds.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -31,10 +34,10 @@ app.add_middleware(
         "http://127.0.0.1:8501",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],   # explicit — OPTIONS is required for preflight
     allow_headers=["*"],
 )
-# ---------------------------
+# ───────────────────────────────────────────────────────────────────────────────
 
 app.include_router(inference.router)
 
@@ -45,5 +48,5 @@ def health_check():
         "status": "ok" if models_loaded else "degraded",
         "models_loaded": models_loaded,
         "drowsiness_loaded": drowsiness_service.is_loaded,
-        "distraction_loaded": distraction_service.is_loaded
+        "distraction_loaded": distraction_service.is_loaded,
     }
