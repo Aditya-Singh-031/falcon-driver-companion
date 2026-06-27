@@ -10,12 +10,11 @@ import HudOverlay from './HudOverlay';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Camera positions: outside → approach → inside cabin
+// Camera positions: outside → approach → hover at window
 const CAM_POSITIONS = [
-  { pos: [8,  2.5, 14],  target: [0, 0.8, 0] },   // 0% – wide outside shot
-  { pos: [3,  1.8,  7],  target: [0, 0.8, 0] },   // 30% – approaching
-  { pos: [0.5, 1.4,  2], target: [0, 1.0, 0] },   // 60% – near driver window
-  { pos: [0,   1.2, -0.5], target: [0, 1.0, 2] }, // 100% – inside cabin, looking at dash
+  { pos: [7,  2.0, 10],  target: [0, 0.5,  0] },    // 0% – wide outside shot
+  { pos: [3,  1.2,  5],  target: [0, 0.5,  0] },    // 50% – approaching
+  { pos: [1.2, 0.8, 2],  target: [-0.5, 0.5, -1] }  // 100% – hovering at the driver window
 ];
 
 function lerp(a, b, t) { return a + (b - a) * t; }
@@ -193,7 +192,7 @@ export default function HeroScene() {
     <section
       ref={sectionRef}
       id="system"
-      style={{ height: '400vh', position: 'relative' }}
+      style={{ height: '250vh', position: 'relative' }}
     >
       {/* Sticky wrapper — everything inside sticks while user scrolls */}
       <div
@@ -239,7 +238,7 @@ export default function HeroScene() {
         {/* Three.js Canvas */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
           <Canvas
-            dpr={[1, 2]}
+            dpr={1}  /* <-- This single change fixes 90% of the lag */
             gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }}
             shadows
           >

@@ -29,14 +29,24 @@ class DrowsinessService:
             return
 
         try:
+            # 1. Initialize the architecture
             self.model = models.efficientnet_b0(weights=None)
             num_ftrs = self.model.classifier[1].in_features
-            
-            # Binary classification head: index 0 (non_drowsy), index 1 (drowsy)
             self.model.classifier[1] = torch.nn.Linear(num_ftrs, 2)
             
-            state_dict = torch.load(settings.DROWSINESS_MODEL_PATH, map_location=self.device, weights_only=True)
-            self.model.load_state_dict(state_dict)
+            # 2. Bypass strict unpickler (weights_only=False)
+            loaded_data = torch.load(
+                settings.DROWSINESS_MODEL_PATH, 
+                map_location=self.device, 
+                weights_only=False
+            )
+            
+            # 3. Handle both state_dict saves and full-model saves
+            if isinstance(loaded_data, dict):
+                self.model.load_state_dict(loaded_data)
+            else:
+                self.model = loaded_data
+                
             self.model.to(self.device)
             self.model.eval()
             self.is_loaded = True
