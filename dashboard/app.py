@@ -24,7 +24,7 @@ import streamlit as st
 from PIL import Image
 
 # ── Config ────────────────────────────────────────────────────────────────────
-BACKEND_URL      = "http://127.0.0.1:8000"
+BACKEND_URL      = "http://0.0.0.1:8000"
 HEALTH_TTL_SEC  = 10        # re-check backend every 10 s, not every render
 NEON_YELLOW      = "#D4F000"
 NEON_CYAN        = "#00F3FF"
@@ -223,7 +223,7 @@ with intro_col:
             unsafe_allow_html=True,
         )
         st.error(
-            "Cannot reach backend at `http://127.0.0.1:8000`.  \n"
+            "Cannot reach backend at `http://0.0.0.1:8000`.  \n"
             "Run: `cd backend && uvicorn main:app --reload`"
         )
         st.markdown(
@@ -266,7 +266,7 @@ with cockpit_col:
         )
         st.image(
             "https://picsum.photos/seed/falcon-cockpit/640/360",
-            use_container_width=True,
+            width=True,
         )
 
     with screen_col:
