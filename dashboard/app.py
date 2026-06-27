@@ -266,7 +266,7 @@ with cockpit_col:
         )
         st.image(
             "https://picsum.photos/seed/falcon-cockpit/640/360",
-            use_column_width=True,
+            use_container_width=True,
         )
 
     with screen_col:

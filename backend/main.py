@@ -24,7 +24,12 @@ app = FastAPI(title="Falcon Edge AI API", lifespan=lifespan)
 # --- NEW CORS MIDDLEWARE ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Changed this to a wildcard to fix local IP mismatches
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8501",
+        "http://127.0.0.1:8501",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
