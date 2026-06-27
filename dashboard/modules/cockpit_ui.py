@@ -21,7 +21,7 @@ def render_cockpit_top(backend_ok: bool):
     with car_col:
         st.markdown("<div class='metric-label'>3D CABIN TELEMETRY</div>", unsafe_allow_html=True)
         
-        # 3D Car with Click-to-Toggle-Doors and Anti-Looping logic
+        # Added disable-pan to lock it center, and strict time clamping to fix the loop
         components.html(
             """
             <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
@@ -33,6 +33,8 @@ def render_cockpit_top(backend_ok: bool):
                 id="supercar"
                 src="http://localhost:3000/models/lamborghini_centenario_roadster_sdc.glb"
                 camera-controls
+                disable-pan
+                disable-zoom
                 auto-rotate
                 rotation-per-second="20deg"
                 shadow-intensity="1"
@@ -43,23 +45,35 @@ def render_cockpit_top(backend_ok: bool):
                 const model = document.querySelector('#supercar');
                 let doorsOpen = false;
                 
-                // The GLB file has the animation set to repeat. 
-                // This event listener catches the exact moment the animation finishes one cycle and hits the brakes.
-                model.addEventListener('loop', () => {
+                // Force pause at the very beginning when loaded
+                model.addEventListener('load', () => {
                     model.pause();
+                    model.currentTime = 0;
                 });
                 
                 model.addEventListener('click', () => {
+                    if (!model.duration) return; // Wait until loaded
                     doorsOpen = !doorsOpen;
-                    // Play forwards to open (1), play in reverse to close (-1)
                     model.timeScale = doorsOpen ? 1 : -1; 
                     model.play();
+                });
+
+                // Slam the brakes the exact millisecond it hits the ends
+                model.addEventListener('timeupdate', () => {
+                    if (!model.duration) return;
+                    
+                    if (model.timeScale === 1 && model.currentTime >= model.duration - 0.05) {
+                        model.pause();
+                        model.currentTime = model.duration;
+                    } else if (model.timeScale === -1 && model.currentTime <= 0.05) {
+                        model.pause();
+                        model.currentTime = 0;
+                    }
                 });
             </script>
             """,
             height=320
         )
-        # Cleaned up text below the car
         st.markdown(
             """
             <div style="margin-top: 0.5rem; text-align: center;">
@@ -77,7 +91,7 @@ def render_cockpit_top(backend_ok: bool):
         with ctrl_a: run_live = st.toggle("Start Live Inference", value=False)
         with ctrl_b: fps_target = st.slider("Target FPS", 1, 15, 5)
 
-    st.markdown("</div>", unsafe_allow_html=True) # Close cockpit shell
+    st.markdown("</div>", unsafe_allow_html=True) 
     
     return screen_placeholder, run_live, fps_target
 
@@ -118,7 +132,7 @@ def run_inference_loop(backend_ok, backend_url, screen_placeholder, run_live, fp
                             dist_ph.metric("Distraction", data.get("distraction", "?"), f"{data.get('distraction_confidence', 0):.0%}")
                             lat_ph.metric("Latency", f"{(time.time() - t0) * 1000:.0f} ms")
                     except Exception:
-                        pass # Silently drop timeouts to keep the video feed perfectly smooth
+                        pass 
 
                     time.sleep(max(0, frame_interval - (time.time() - t0)))
             finally:
