@@ -1,12 +1,10 @@
 import requests
 import streamlit as st
 
-# Import our newly split modules
 from modules.styles import apply_custom_styles
-from modules.cockpit_ui import render_cockpit
+from modules.cockpit_ui import render_cockpit_top, run_inference_loop
 from modules.analytics_ui import render_analytics
 
-# ── Config ────────────────────────────────────────────────────────────────────
 BACKEND_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(page_title="Falcon — Driver Companion", page_icon="🦅", layout="wide")
@@ -52,7 +50,20 @@ with intro_col:
         st.error("Cannot reach backend. Run: `cd backend && uvicorn main:app --reload`")
 
 with cockpit_col:
-    render_cockpit(backend_ok, BACKEND_URL)
+    # Renders the UI and returns the controls
+    screen_placeholder, run_live, fps_target = render_cockpit_top(backend_ok)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ── NEW FULL-WIDTH LIVE METRICS ROW ───────────────────────────────────────────
+st.markdown("<div class='section-label'>LIVE TELEMETRY</div>", unsafe_allow_html=True)
+st.markdown("<div class='glass-panel'>", unsafe_allow_html=True)
+m1, m2, m3, m4, m5 = st.columns(5)
+ph_list = [m1.empty(), m2.empty(), m3.empty(), m4.empty(), m5.empty()]
+st.markdown("</div>", unsafe_allow_html=True)
+
+# Start the actual camera loop using the full-width placeholders
+run_inference_loop(backend_ok, BACKEND_URL, screen_placeholder, run_live, fps_target, ph_list)
 
 st.markdown("<br><br>", unsafe_allow_html=True)
 
