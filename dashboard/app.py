@@ -224,7 +224,7 @@ with intro_col:
             unsafe_allow_html=True,
         )
         st.error(
-            "Cannot reach backend at `http://0.0.0.1:8000`.  \n"
+            "Cannot reach backend at `http://127.0.0.1:8000`.  \n"
             "Run: `cd backend && uvicorn main:app --reload`"
         )
         st.markdown(
@@ -255,19 +255,24 @@ with cockpit_col:
     car_col, screen_col = st.columns([1.4, 1.8])
 
     with car_col:
-        st.markdown("<div class='metric-label'>ENTRY SEQUENCE</div>", unsafe_allow_html=True)
+        st.markdown("<div class='metric-label'>SYSTEM TELEMETRY</div>", unsafe_allow_html=True)
         st.markdown(
             "<p style='font-size:0.83rem;color:#bbbbbb;line-height:1.5;'>"
-            "This block is the mount point for a Three.js / React Three Fiber supercar intro: "
-            "door opens → camera glides into cabin → view settles on the dashboard screen.<br><br>"
-            "Replace this placeholder with an <code>&lt;iframe&gt;</code> pointing to the "
-            "Next.js frontend once it is deployed."
+            "Falcon Edge Engine is routing the local camera feed directly to the PyTorch backend. "
+            "Data is processed in-memory. Zero network hops. Absolute privacy."
             "</p>",
             unsafe_allow_html=True,
         )
-        st.image(
-            "https://picsum.photos/seed/falcon-cockpit/640/360",
-            width=True,
+        
+        # A sleek visual representation of the active Edge Node
+        st.markdown(
+            """
+            <div style="margin-top: 1rem; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 8px; background: rgba(0, 243, 255, 0.05); text-align: center;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: #00F3FF; box-shadow: 0 0 12px #00F3FF; margin: 0 auto 10px auto; animation: pulse 2s infinite;"></div>
+                <div style="font-family: monospace; font-size: 0.7rem; color: #00F3FF; letter-spacing: 0.1em;">NODE ACTIVE // SECURE</div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
     with screen_col:
