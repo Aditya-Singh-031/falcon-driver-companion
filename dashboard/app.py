@@ -162,7 +162,8 @@ def _fetch_health() -> dict:
 
 def get_health():
     health = _fetch_health()
-    backend_ok = health.get("status") == "ok"
+    # Accept both 'ok' and 'degraded' as proof the backend is online!
+    backend_ok = health.get("status") in ["ok", "degraded"]
     return health, backend_ok
 
 
