@@ -61,6 +61,8 @@ export default function TechCarousel() {
   const trackRef = useRef(null);
 
   useEffect(() => {
+    let ctx; // Store the GSAP context
+
     async function init() {
       const { gsap } = await import('gsap');
       const { ScrollTrigger } = await import('gsap/ScrollTrigger');
@@ -70,20 +72,28 @@ export default function TechCarousel() {
       const section = sectionRef.current;
       if (!track || !section) return;
 
-      const totalWidth = track.scrollWidth - window.innerWidth + 100;
+      // Wrap animations in a context for easy cleanup
+      ctx = gsap.context(() => {
+        const totalWidth = track.scrollWidth - window.innerWidth + 100;
 
-      gsap.to(track, {
-        x: -totalWidth,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: section,
-          start: 'top top',
-          end: 'bottom bottom',
-          scrub: 1,
-        },
-      });
+        gsap.to(track, {
+          x: -totalWidth,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: 'bottom bottom',
+            scrub: 1,
+            invalidateOnRefresh: true, // Recalculates sizes on window resize
+          },
+        });
+      }, sectionRef);
     }
+    
     init();
+
+    // The Magic Fix: Destroy the animation on unmount so they don't duplicate
+    return () => ctx && ctx.revert(); 
   }, []);
 
   return (

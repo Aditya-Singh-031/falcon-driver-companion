@@ -255,24 +255,33 @@ with cockpit_col:
     car_col, screen_col = st.columns([1.4, 1.8])
 
     with car_col:
-        st.markdown("<div class='metric-label'>SYSTEM TELEMETRY</div>", unsafe_allow_html=True)
-        st.markdown(
-            "<p style='font-size:0.83rem;color:#bbbbbb;line-height:1.5;'>"
-            "Falcon Edge Engine is routing the local camera feed directly to the PyTorch backend. "
-            "Data is processed in-memory. Zero network hops. Absolute privacy."
-            "</p>",
-            unsafe_allow_html=True,
-        )
+        st.markdown("<div class='metric-label'>3D CABIN TELEMETRY</div>", unsafe_allow_html=True)
         
-        # A sleek visual representation of the active Edge Node
-        st.markdown(
+        # Inject Google's <model-viewer> to render the 3D car interactively
+        import streamlit.components.v1 as components
+        components.html(
             """
-            <div style="margin-top: 1rem; padding: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 8px; background: rgba(0, 243, 255, 0.05); text-align: center;">
-                <div style="width: 12px; height: 12px; border-radius: 50%; background: #00F3FF; box-shadow: 0 0 12px #00F3FF; margin: 0 auto 10px auto; animation: pulse 2s infinite;"></div>
-                <div style="font-family: monospace; font-size: 0.7rem; color: #00F3FF; letter-spacing: 0.1em;">NODE ACTIVE // SECURE</div>
-            </div>
+            <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+            <style>
+                model-viewer { 
+                    width: 100%; 
+                    height: 380px; 
+                    background-color: transparent; 
+                    --poster-color: transparent;
+                }
+            </style>
+            <model-viewer
+                src="http://localhost:3000/models/lamborghini_centenario_roadster_sdc.glb"
+                camera-controls
+                auto-rotate
+                rotation-per-second="30deg"
+                shadow-intensity="1"
+                exposure="0.8"
+                environment-image="neutral"
+                disable-zoom>
+            </model-viewer>
             """,
-            unsafe_allow_html=True
+            height=380
         )
 
     with screen_col:
