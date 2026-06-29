@@ -44,31 +44,35 @@ def render_cockpit_top(backend_ok: bool):
             <script>
                 const model = document.querySelector('#supercar');
                 let doorsOpen = false;
+                let animFrame = null;
+                let targetTime = 0;
                 
-                // Force pause at the very beginning when loaded
                 model.addEventListener('load', () => {
                     model.pause();
                     model.currentTime = 0;
                 });
                 
-                model.addEventListener('click', () => {
-                    if (!model.duration) return; // Wait until loaded
-                    doorsOpen = !doorsOpen;
-                    model.timeScale = doorsOpen ? 1 : -1; 
-                    model.play();
-                });
-
-                // Slam the brakes the exact millisecond it hits the ends
-                model.addEventListener('timeupdate', () => {
-                    if (!model.duration) return;
+                function animateDoors() {
+                    // Smoothly interpolate current time toward target time
+                    model.currentTime += (targetTime - model.currentTime) * 0.1;
                     
-                    if (model.timeScale === 1 && model.currentTime >= model.duration - 0.05) {
-                        model.pause();
-                        model.currentTime = model.duration;
-                    } else if (model.timeScale === -1 && model.currentTime <= 0.05) {
-                        model.pause();
-                        model.currentTime = 0;
+                    // Stop animating when we get close enough to the target
+                    if (Math.abs(targetTime - model.currentTime) > 0.01) {
+                        animFrame = requestAnimationFrame(animateDoors);
+                    } else {
+                        model.currentTime = targetTime;
                     }
+                }
+                
+                model.addEventListener('click', () => {
+                    if (!model.duration) return;
+                    doorsOpen = !doorsOpen;
+                    
+                    // Set target: end of animation if opening, start if closing
+                    targetTime = doorsOpen ? model.duration : 0;
+                    
+                    if (animFrame) cancelAnimationFrame(animFrame);
+                    animateDoors();
                 });
             </script>
             """,
