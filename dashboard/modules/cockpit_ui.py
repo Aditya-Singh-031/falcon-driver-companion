@@ -2,8 +2,12 @@ import base64
 import time
 import cv2
 import requests
+import json
+import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+from datetime import datetime
+from pathlib import Path
 
 def render_cockpit_top(backend_ok: bool):
     st.markdown("<div class='section-label'>COCKPIT · LIVE IN-CABIN VIEW</div>", unsafe_allow_html=True)
@@ -21,7 +25,7 @@ def render_cockpit_top(backend_ok: bool):
     with car_col:
         st.markdown("<div class='metric-label'>3D CABIN TELEMETRY</div>", unsafe_allow_html=True)
         
-        # Added disable-pan to lock it center, and strict time clamping to fix the loop
+        # 3D Car with disable-pan and requestAnimationFrame door toggle
         components.html(
             """
             <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
@@ -53,6 +57,8 @@ def render_cockpit_top(backend_ok: bool):
                 });
                 
                 function animateDoors() {
+                    if (!model.duration) return;
+                    
                     // Smoothly interpolate current time toward target time
                     model.currentTime += (targetTime - model.currentTime) * 0.1;
                     
@@ -108,9 +114,12 @@ def run_inference_loop(backend_ok, backend_url, screen_placeholder, run_live, fp
     if backend_ok and run_live:
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
-            screen_placeholder.error("Could not open webcam.")
+            screen_placeholder.error("Could not open webcam. Check System Preferences → Privacy → Camera.")
         else:
             frame_interval = 1.0 / fps_target
+            session_data = []  # Initialize list to hold telemetry
+            session_start_time = time.time()
+            
             try:
                 while run_live:
                     t0 = time.time()
@@ -135,12 +144,42 @@ def run_inference_loop(backend_ok, backend_url, screen_placeholder, run_live, fp
                             drowsy_ph.metric("Drowsiness", data.get("drowsiness", "?"), f"{data.get('drowsiness_confidence', 0):.0%}")
                             dist_ph.metric("Distraction", data.get("distraction", "?"), f"{data.get('distraction_confidence', 0):.0%}")
                             lat_ph.metric("Latency", f"{(time.time() - t0) * 1000:.0f} ms")
+                            
+                            # Append data for logging
+                            session_data.append({
+                                "elapsed_s": t0 - session_start_time,
+                                "label": d_state,
+                                "ear": data.get("drowsiness_confidence", 0) if data.get("drowsiness") == "drowsy" else 1 - data.get("drowsiness_confidence", 0)
+                            })
+                            
                     except Exception:
                         pass 
 
                     time.sleep(max(0, frame_interval - (time.time() - t0)))
             finally:
                 cap.release()
+                
+                # Save the log file when the loop ends
+                if session_data:
+                    logs_dir = Path("logs")
+                    logs_dir.mkdir(exist_ok=True)
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    df = pd.DataFrame(session_data)
+                    csv_path = logs_dir / f"session_{timestamp}.csv"
+                    df.to_csv(csv_path, index=False)
+                    
+                    # Generate a basic summary JSON required by analytics_ui.py
+                    summary_path = logs_dir / f"session_{timestamp}_summary.json"
+                    summary = {
+                        "duration_sec": df["elapsed_s"].iloc[-1] if not df.empty else 0,
+                        "attentive_pct": (df["label"] == "safe").mean() * 100 if not df.empty else 0,
+                        "alert_count": len(df[df["label"] != "safe"]),
+                        "total_frames": len(df)
+                    }
+                    with open(summary_path, 'w') as f:
+                        json.dump(summary, f)
+                        
+                    st.rerun() # Force Streamlit to refresh so the new log appears in the dropdown immediately
     else:
         if not run_live:
             screen_placeholder.info("Toggle **Start Live Inference** above to begin streaming.")
