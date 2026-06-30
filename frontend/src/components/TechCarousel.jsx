@@ -13,105 +13,21 @@ const CARDS = [
 function Card({ data }) {
   return (
     <div style={{ flexShrink: 0, width: 'clamp(280px, 28vw, 380px)' }}>
-      <div
-        style={{
-          height: '480px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          padding: '36px 32px',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        <p
-          className="font-display"
-          style={{
-            fontSize: '4rem',
-            fontWeight: 700,
-            color: 'rgba(255,255,255,0.04)',
-            lineHeight: 1,
-            marginBottom: '16px',
-          }}
-        >
-          {data.num}
-        </p>
-
-        <span
-          className="font-mono"
-          style={{
-            fontSize: '0.6rem',
-            letterSpacing: '0.2em',
-            color: data.accent,
-            border: `1px solid ${data.accent}44`,
-            padding: '3px 8px',
-            display: 'inline-block',
-            marginBottom: '20px',
-          }}
-        >
-          {data.logo}
-        </span>
-
-        <h3
-          className="font-display"
-          style={{
-            fontSize: 'clamp(1.4rem,2vw,2rem)',
-            fontWeight: 700,
-            color: '#F5F5F5',
-          }}
-        >
-          {data.title}
-        </h3>
-
-        <p className="section-label" style={{ color: data.accent, marginBottom: 20 }}>
-          {data.sub}
-        </p>
-
-        <p
-          className="font-body"
-          style={{
-            fontSize: '.85rem',
-            color: '#777',
-            lineHeight: 1.7,
-            marginBottom: 32,
-          }}
-        >
-          {data.body}
-        </p>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: 20,
-            borderTop: '1px solid rgba(255,255,255,.06)',
-            paddingTop: 20,
-          }}
-        >
+      <div style={{ height: '480px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', padding: '36px 32px', position: 'relative', overflow: 'hidden' }}>
+        <p className="font-display" style={{ fontSize: '4rem', fontWeight: 700, color: 'rgba(255,255,255,0.04)', lineHeight: 1, marginBottom: '16px' }}>{data.num}</p>
+        <span className="font-mono" style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: data.accent, border: `1px solid ${data.accent}44`, padding: '3px 8px', display: 'inline-block', marginBottom: '20px' }}>{data.logo}</span>
+        <h3 className="font-display" style={{ fontSize: 'clamp(1.4rem, 2vw, 2rem)', fontWeight: 700, color: '#F5F5F5', marginBottom: '6px', lineHeight: 1.1 }}>{data.title}</h3>
+        <p className="section-label" style={{ marginBottom: '20px', color: data.accent }}>{data.sub}</p>
+        <p className="font-body" style={{ fontSize: '0.85rem', color: '#777', lineHeight: 1.7, marginBottom: '32px' }}>{data.body}</p>
+        <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
           {data.metrics.map(([k, v]) => (
             <div key={k}>
-              <p className="section-label" style={{ fontSize: '.55rem' }}>
-                {k}
-              </p>
-              <p
-                className="font-display"
-                style={{ fontSize: '1.1rem', color: data.accent }}
-              >
-                {v}
-              </p>
+              <p className="section-label" style={{ fontSize: '0.55rem', marginBottom: '4px' }}>{k}</p>
+              <p className="font-display" style={{ fontSize: '1.1rem', color: data.accent }}>{v}</p>
             </div>
           ))}
         </div>
-
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 2,
-            background: `linear-gradient(90deg,transparent,${data.accent},transparent)`,
-            opacity: .5,
-          }}
-        />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${data.accent}, transparent)`, opacity: 0.5 }} />
       </div>
     </div>
   );
@@ -123,113 +39,83 @@ export default function TechCarousel() {
 
   useEffect(() => {
     let ctx;
+    let observer;
 
     async function init() {
       const { gsap } = await import('gsap');
       const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-
       gsap.registerPlugin(ScrollTrigger);
 
       ctx = gsap.context(() => {
-        const section = sectionRef.current;
         const track = trackRef.current;
+        const section = sectionRef.current;
+        if (!track || !section) return;
 
-        if (!section || !track) return;
-
-        gsap.to(track, {
-          x: () => -(track.scrollWidth - section.clientWidth),
-          ease: 'none',
-
-          scrollTrigger: {
-            trigger: section,
-            start: 'top top',
-            end: () => `+=${section.offsetHeight}`,
-            scrub: true,
-            invalidateOnRefresh: true,
-            anticipatePin: 1,
-          },
-        });
-
-        ScrollTrigger.refresh();
+        // Force explicit start at 0 to prevent the "pre-starting" bug
+        gsap.fromTo(track, 
+          { x: 0 }, 
+          {
+            x: () => -(track.scrollWidth - window.innerWidth + 80),
+            ease: 'none',
+            scrollTrigger: {
+              trigger: section,
+              start: 'top top',
+              end: 'bottom bottom', // Tied precisely to the 400vh parent
+              scrub: 1,
+              invalidateOnRefresh: true,
+            },
+          }
+        );
       }, sectionRef);
+
+      // THE RADAR: Recalculates GSAP math the instant the 3D canvas pushes the page down
+      observer = new ResizeObserver(() => {
+        ScrollTrigger.refresh();
+      });
+      observer.observe(document.body);
     }
 
     init();
 
-    return async () => {
-      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-      ctx?.revert();
-      ScrollTrigger.getAll().forEach((t) => t.kill());
+    return () => {
+      if (ctx) ctx.revert();
+      if (observer) observer.disconnect();
     };
   }, []);
 
   return (
-    <section
-      ref={sectionRef}
-      id="tech"
-      style={{
-        height: '400vh',
-        position: 'relative',
-        background: '#050505',
-        overflow: 'clip',
-      }}
-    >
-      <div
-        style={{
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
+    <section ref={sectionRef} id="tech" style={{ height: '400vh', background: '#050505', position: 'relative' }}>
+      
+      {/* NATIVE CSS STICKY: Bypasses GSAP pinning completely */}
+      <div 
+        style={{ 
+          position: 'sticky', 
+          top: 0, 
+          height: '100vh', 
+          width: '100%', 
+          overflow: 'hidden', 
+          display: 'flex', 
+          flexDirection: 'column', 
           justifyContent: 'center',
-          zIndex: 10,
+          zIndex: 10
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            padding: '0 clamp(24px,6vw,80px)',
-            marginBottom: 48,
-          }}
-        >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px', flexShrink: 0 }}>
           <div>
-            <p className="section-label">/ 03 TECHNOLOGY</p>
-            <h2
-              className="font-display"
-              style={{
-                fontSize: 'clamp(2rem,5vw,5rem)',
-                color: '#F5F5F5',
-              }}
-            >
-              THE STACK
-            </h2>
+            <p className="section-label" style={{ marginBottom: '8px' }}>/ 03 TECHNOLOGY</p>
+            <h2 className="font-display" style={{ fontSize: 'clamp(2rem, 5vw, 5rem)', fontWeight: 700, letterSpacing: '-0.02em', color: '#F5F5F5', lineHeight: 1 }}>THE STACK</h2>
           </div>
-
-          <p className="section-label" style={{ opacity: .5 }}>
-            SCROLL →
-          </p>
+          <p className="section-label" style={{ opacity: 0.5 }}>SCROLL →</p>
         </div>
 
-        <div style={{ paddingLeft: 'clamp(24px,6vw,80px)' }}>
-          <div
-            ref={trackRef}
-            style={{
-              display: 'flex',
-              gap: 24,
-              width: 'max-content',
-            }}
-          >
-            {CARDS.map((card) => (
-              <Card key={card.id} data={card} />
-            ))}
-
+        <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)', flexShrink: 0 }}>
+          <div ref={trackRef} style={{ display: 'flex', gap: '24px', width: 'max-content', willChange: 'transform' }}>
+            {CARDS.map((card) => <Card key={card.id} data={card} />)}
             <div style={{ width: '10vw' }} />
           </div>
         </div>
       </div>
+      
     </section>
   );
 }
