@@ -104,7 +104,6 @@ def render_cockpit_top(backend_ok: bool):
         with ctrl_a:
             def _toggle_inference():
                 st.session_state.run_live = not st.session_state.run_live
-                # Start a fresh session file when toggling ON
                 if st.session_state.run_live:
                     _ensure_logs_dir()
                     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -147,7 +146,7 @@ def run_inference_loop(
     }
     ALERT_ICONS = {0: "🟢", 1: "🟡", 2: "🔴"}
 
-    # ── Idle state ─────────────────────────────────────────────────────────────
+    # ── Idle state ────────────────────────────────────────────────────────────
     if not run_live:
         screen_placeholder.info("Toggle **Start Live Inference** above to begin streaming.")
         for ph in ph_list:
@@ -160,7 +159,7 @@ def run_inference_loop(
         )
         return
 
-    # ── Open / reuse VideoCapture ───────────────────────────────────────────────
+    # ── Open / reuse VideoCapture ─────────────────────────────────────────────
     if st.session_state.get("cap") is None:
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
@@ -180,8 +179,6 @@ def run_inference_loop(
 
     frame_interval = 1.0 / max(fps_target, 1)
     stop_requested = False
-
-    # Burst a fixed number of frames per Streamlit rerun to avoid blocking.
     FRAMES_PER_BURST = max(1, fps_target * 2)
 
     for _ in range(FRAMES_PER_BURST):
@@ -195,7 +192,7 @@ def run_inference_loop(
             continue
 
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        # ✅ use_container_width replaces deprecated use_column_width
+        # ✅ Use new Streamlit API: width='stretch'
         screen_placeholder.image(frame_rgb, channels="RGB", width="stretch")
 
         _, buf = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -234,7 +231,6 @@ def run_inference_loop(
                     "distraction": data.get("distraction", ""),
                     "distraction_confidence": round(data.get("distraction_confidence", 0), 4),
                     "latency_ms": round(latency_ms, 1),
-                    # head pose angles if backend provides them
                     "yaw": data.get("yaw", None),
                     "pitch": data.get("pitch", None),
                     "roll": data.get("roll", None),
@@ -259,14 +255,13 @@ def run_inference_loop(
 
     st.session_state.session_data = session_data
 
-    # ── Session ended — write final summary ────────────────────────────────────
+    # ── Session ended — write final summary ───────────────────────────────────
     if stop_requested or not st.session_state.run_live:
         cap.release()
         st.session_state.cap = None
 
         if session_data and session_file is not None:
             df = pd.DataFrame(session_data)
-            # Overwrite with fully-typed, clean CSV
             df.to_csv(session_file, index=False)
 
             summary = {
@@ -281,9 +276,7 @@ def run_inference_loop(
                 "total_frames": len(df),
                 "mean_latency_ms": round(float(df["latency_ms"].mean()), 1) if not df.empty else 0,
             }
-            summary_path = session_file.with_suffix("").parent / (
-                session_file.stem + "_summary.json"
-            )
+            summary_path = session_file.parent / (session_file.stem + "_summary.json")
             with open(summary_path, "w") as f:
                 json.dump(summary, f, indent=2)
 
@@ -292,5 +285,5 @@ def run_inference_loop(
         st.rerun()
         return
 
-    # ── Keep looping — trigger next burst ──────────────────────────────────────
+    # ── Keep looping — trigger next burst ─────────────────────────────────────
     st.rerun()

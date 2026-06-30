@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 import streamlit as st
 from pathlib import Path
 
-# Same resolved path as cockpit_ui so both modules always point to dashboard/logs/
 LOGS_DIR = Path(__file__).resolve().parent.parent / "logs"
 
 
@@ -21,7 +20,6 @@ def render_analytics():
         )
         return
 
-    # ── Session selector ──────────────────────────────────────────────────────
     selected = st.sidebar.selectbox(
         "Session",
         options=csvs,
@@ -34,11 +32,10 @@ def render_analytics():
         st.error(f"Could not read {selected.name}: {exc}")
         return
 
-    # Gracefully handle old CSVs that used the column name 'label' instead of 'driver_state'
     if "label" in df.columns and "driver_state" not in df.columns:
         df = df.rename(columns={"label": "driver_state"})
 
-    summary_path = selected.with_suffix("").parent / (selected.stem + "_summary.json")
+    summary_path = selected.parent / (selected.stem + "_summary.json")
     summary: dict = {}
     if summary_path.exists():
         try:
@@ -107,7 +104,6 @@ def render_analytics():
                 fillcolor="rgba(0,243,255,0.06)",
             )
         )
-        # 25 ms target line
         fig_lat.add_hline(
             y=25,
             line_dash="dash",
@@ -126,7 +122,7 @@ def render_analytics():
         )
         st.plotly_chart(fig_lat, width="stretch")
 
-    # ── Confidence over time ───────────────────────────────────────────────────
+    # ── Confidence over time ──────────────────────────────────────────────────
     if all(c in df.columns for c in ["drowsiness_confidence", "distraction_confidence", "elapsed_s"]):
         st.subheader("Model Confidence")
         fig_conf = go.Figure()
@@ -159,7 +155,7 @@ def render_analytics():
         )
         st.plotly_chart(fig_conf, width="stretch")
 
-    # ── Head pose angles ───────────────────────────────────────────────────────
+    # ── Head pose angles ──────────────────────────────────────────────────────
     if all(c in df.columns for c in ["yaw", "pitch", "roll"]):
         pose_df = df.dropna(subset=["yaw", "pitch", "roll"])
         if not pose_df.empty:
@@ -190,7 +186,7 @@ def render_analytics():
             )
             st.plotly_chart(fig_ang, width="stretch")
 
-    # ── State distribution pie ──────────────────────────────────────────────────
+    # ── State distribution pie ────────────────────────────────────────────────
     if "driver_state" in df.columns:
         st.subheader("State Distribution")
         label_counts = df["driver_state"].value_counts().reset_index()
@@ -206,7 +202,7 @@ def render_analytics():
         fig_pie.update_layout(margin=dict(l=0, r=0, t=8, b=0))
         st.plotly_chart(fig_pie, width="stretch")
 
-    # ── Raw data expander ──────────────────────────────────────────────────────
+    # ── Raw data expander ─────────────────────────────────────────────────────
     with st.expander("Raw Session Data"):
         st.dataframe(df, width="stretch")
         csv_bytes = df.to_csv(index=False).encode()
