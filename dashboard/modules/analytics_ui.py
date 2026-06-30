@@ -7,6 +7,28 @@ from pathlib import Path
 
 LOGS_DIR = Path(__file__).resolve().parent.parent / "logs"
 
+_PLOT_CFG = {"displayModeBar": False, "responsive": True}
+_DARK_LAYOUT = dict(
+    margin=dict(l=0, r=0, t=8, b=0),
+    plot_bgcolor="#111",
+    paper_bgcolor="#111",
+    font_color="#ccc",
+)
+
+COLOUR_MAP = {
+    "safe": "#50c864",
+    "attentive": "#50c864",
+    "distracted": "#e03c3c",
+    "distracted_left": "#e03c3c",
+    "distracted_right": "#e03c3c",
+    "distracted_down": "#ff9020",
+    "distracted_up": "#ff9020",
+    "drowsy": "#f0e040",
+    "critical": "#ff2020",
+    "no_face": "#808080",
+    "unknown": "#555555",
+}
+
 
 def render_analytics():
     st.markdown("<div class='section-label'>SESSION LOGS</div>", unsafe_allow_html=True)
@@ -53,20 +75,6 @@ def render_analytics():
 
     st.divider()
 
-    COLOUR_MAP = {
-        "safe": "#50c864",
-        "attentive": "#50c864",
-        "distracted": "#e03c3c",
-        "distracted_left": "#e03c3c",
-        "distracted_right": "#e03c3c",
-        "distracted_down": "#ff9020",
-        "distracted_up": "#ff9020",
-        "drowsy": "#f0e040",
-        "critical": "#ff2020",
-        "no_face": "#808080",
-        "unknown": "#555555",
-    }
-
     # ── State Timeline ────────────────────────────────────────────────────────
     if "driver_state" in df.columns and "elapsed_s" in df.columns:
         st.subheader("State Timeline")
@@ -80,14 +88,8 @@ def render_analytics():
             labels={"elapsed_s": "Elapsed (s)", "driver_state": "State"},
         )
         fig_tl.update_traces(marker=dict(size=4, opacity=0.8))
-        fig_tl.update_layout(
-            showlegend=False,
-            margin=dict(l=0, r=0, t=8, b=0),
-            plot_bgcolor="#111",
-            paper_bgcolor="#111",
-            font_color="#ccc",
-        )
-        st.plotly_chart(fig_tl, width="stretch")
+        fig_tl.update_layout(showlegend=False, **_DARK_LAYOUT)
+        st.plotly_chart(fig_tl, use_container_width=True, config=_PLOT_CFG)
 
     # ── Latency over time ─────────────────────────────────────────────────────
     if "latency_ms" in df.columns and "elapsed_s" in df.columns:
@@ -113,14 +115,11 @@ def render_analytics():
         )
         fig_lat.update_layout(
             height=240,
-            margin=dict(l=0, r=0, t=8, b=0),
-            plot_bgcolor="#111",
-            paper_bgcolor="#111",
-            font_color="#ccc",
             yaxis_title="ms",
             xaxis_title="Elapsed (s)",
+            **_DARK_LAYOUT,
         )
-        st.plotly_chart(fig_lat, width="stretch")
+        st.plotly_chart(fig_lat, use_container_width=True, config=_PLOT_CFG)
 
     # ── Confidence over time ──────────────────────────────────────────────────
     if all(c in df.columns for c in ["drowsiness_confidence", "distraction_confidence", "elapsed_s"]):
@@ -146,14 +145,11 @@ def render_analytics():
         )
         fig_conf.update_layout(
             height=240,
-            margin=dict(l=0, r=0, t=8, b=0),
-            plot_bgcolor="#111",
-            paper_bgcolor="#111",
-            font_color="#ccc",
             yaxis_title="Confidence (%)",
             xaxis_title="Elapsed (s)",
+            **_DARK_LAYOUT,
         )
-        st.plotly_chart(fig_conf, width="stretch")
+        st.plotly_chart(fig_conf, use_container_width=True, config=_PLOT_CFG)
 
     # ── Head pose angles ──────────────────────────────────────────────────────
     if all(c in df.columns for c in ["yaw", "pitch", "roll"]):
@@ -177,14 +173,11 @@ def render_analytics():
                 )
             fig_ang.update_layout(
                 height=260,
-                margin=dict(l=0, r=0, t=8, b=0),
-                plot_bgcolor="#111",
-                paper_bgcolor="#111",
-                font_color="#ccc",
                 yaxis_title="Degrees",
                 xaxis_title="Elapsed (s)",
+                **_DARK_LAYOUT,
             )
-            st.plotly_chart(fig_ang, width="stretch")
+            st.plotly_chart(fig_ang, use_container_width=True, config=_PLOT_CFG)
 
     # ── State distribution pie ────────────────────────────────────────────────
     if "driver_state" in df.columns:
@@ -200,11 +193,11 @@ def render_analytics():
             height=320,
         )
         fig_pie.update_layout(margin=dict(l=0, r=0, t=8, b=0))
-        st.plotly_chart(fig_pie, width="stretch")
+        st.plotly_chart(fig_pie, use_container_width=True, config=_PLOT_CFG)
 
     # ── Raw data expander ─────────────────────────────────────────────────────
     with st.expander("Raw Session Data"):
-        st.dataframe(df, width="stretch")
+        st.dataframe(df, use_container_width=True)
         csv_bytes = df.to_csv(index=False).encode()
         st.download_button(
             "⬇ Download CSV",

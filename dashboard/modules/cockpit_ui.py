@@ -9,8 +9,6 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from pathlib import Path
 
-# Resolve logs directory relative to THIS file so it's always
-# dashboard/logs/ regardless of where `streamlit run` is invoked from.
 LOGS_DIR = Path(__file__).resolve().parent.parent / "logs"
 
 
@@ -19,7 +17,6 @@ def _ensure_logs_dir():
 
 
 def render_cockpit_top(backend_ok: bool):
-    # ── Init session state ────────────────────────────────────────────────────
     for key, default in [
         ("run_live", False),
         ("fps_target", 5),
@@ -110,6 +107,15 @@ def render_cockpit_top(backend_ok: bool):
                     st.session_state.current_session_file = LOGS_DIR / f"session_{ts}.csv"
                     st.session_state.session_start = time.time()
                     st.session_state.session_data = []
+                else:
+                    # Release camera immediately when toggled off
+                    cap = st.session_state.get("cap")
+                    if cap is not None:
+                        try:
+                            cap.release()
+                        except Exception:
+                            pass
+                        st.session_state.cap = None
 
             st.toggle(
                 "Start Live Inference",
@@ -118,13 +124,30 @@ def render_cockpit_top(backend_ok: bool):
                 key="_run_live_widget",
             )
         with ctrl_b:
+            # Clamp any stale fps_target value that may be out of range
+            current_fps = st.session_state.get("fps_target", 5)
+            if not isinstance(current_fps, int) or not (1 <= current_fps <= 30):
+                current_fps = 5
+                st.session_state.fps_target = 5
             st.session_state.fps_target = st.slider(
-                "Target FPS", 1, 15, st.session_state.fps_target, key="_fps_slider"
+                "Target FPS", 1, 30, current_fps, key="_fps_slider"
             )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
     return screen_placeholder, st.session_state.run_live, st.session_state.fps_target
+
+
+def _open_camera() -> cv2.VideoCapture | None:
+    """Try camera index 0, then 1, return opened cap or None."""
+    for idx in (0, 1):
+        cap = cv2.VideoCapture(idx)
+        if cap.isOpened():
+            # Warm-up: discard first frame (avoids black frame on some drivers)
+            cap.read()
+            return cap
+        cap.release()
+    return None
 
 
 def run_inference_loop(
@@ -160,18 +183,26 @@ def run_inference_loop(
         return
 
     # ── Open / reuse VideoCapture ─────────────────────────────────────────────
-    if st.session_state.get("cap") is None:
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
+    cap = st.session_state.get("cap")
+    if cap is None or not cap.isOpened():
+        # Release stale handle if present
+        if cap is not None:
+            try:
+                cap.release()
+            except Exception:
+                pass
+        cap = _open_camera()
+        if cap is None:
             screen_placeholder.error(
-                "❌ Could not open webcam.\n\n"
-                "**macOS:** System Settings → Privacy & Security → Camera → allow Terminal.\n\n"
-                "**Linux/Windows:** Make sure no other app is holding the camera."
+                "❌ Could not open webcam (tried indices 0 and 1).\n\n"
+                "**macOS:** System Settings → Privacy & Security → Camera → allow Terminal / iTerm.\n\n"
+                "**Linux:** Make sure no other app holds `/dev/video0`. Try `v4l2-ctl --list-devices`.\n\n"
+                "**Windows:** Check Device Manager; close any app using the camera."
             )
             st.session_state.run_live = False
+            st.session_state.cap = None
             return
         st.session_state.cap = cap
-    cap = st.session_state.cap
 
     session_data: list = st.session_state.session_data
     session_start: float = st.session_state.session_start or time.time()
@@ -179,7 +210,7 @@ def run_inference_loop(
 
     frame_interval = 1.0 / max(fps_target, 1)
     stop_requested = False
-    FRAMES_PER_BURST = max(1, fps_target * 2)
+    FRAMES_PER_BURST = max(1, min(fps_target * 2, 20))  # cap burst to avoid blocking UI
 
     for _ in range(FRAMES_PER_BURST):
         if not st.session_state.run_live:
@@ -189,11 +220,15 @@ def run_inference_loop(
         t0 = time.time()
         ret, frame_bgr = cap.read()
         if not ret:
-            continue
+            # Camera read failed mid-session — try to recover once
+            cap.release()
+            st.session_state.cap = None
+            screen_placeholder.warning("⚠ Camera read failed — retrying next cycle.")
+            break
 
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        # ✅ Use new Streamlit API: width='stretch'
-        screen_placeholder.image(frame_rgb, channels="RGB", width="stretch")
+        # Use channels="RGB" only — no extra kwargs that vary by Streamlit version
+        screen_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
 
         _, buf = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
         b64 = base64.b64encode(buf.tobytes()).decode()
@@ -237,7 +272,6 @@ def run_inference_loop(
                 }
                 session_data.append(row)
 
-                # ── Live-append each row to CSV immediately ────────────────────
                 if session_file is not None:
                     _ensure_logs_dir()
                     write_header = not session_file.exists()
@@ -257,8 +291,13 @@ def run_inference_loop(
 
     # ── Session ended — write final summary ───────────────────────────────────
     if stop_requested or not st.session_state.run_live:
-        cap.release()
-        st.session_state.cap = None
+        cap = st.session_state.get("cap")
+        if cap is not None:
+            try:
+                cap.release()
+            except Exception:
+                pass
+            st.session_state.cap = None
 
         if session_data and session_file is not None:
             df = pd.DataFrame(session_data)
