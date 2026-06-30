@@ -8,6 +8,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 LOGS_DIR = Path(__file__).resolve().parent.parent / "logs"
 
@@ -108,7 +109,6 @@ def render_cockpit_top(backend_ok: bool):
                     st.session_state.session_start = time.time()
                     st.session_state.session_data = []
                 else:
-                    # Release camera immediately when toggled off
                     cap = st.session_state.get("cap")
                     if cap is not None:
                         try:
@@ -124,7 +124,6 @@ def render_cockpit_top(backend_ok: bool):
                 key="_run_live_widget",
             )
         with ctrl_b:
-            # Clamp any stale fps_target value that may be out of range
             current_fps = st.session_state.get("fps_target", 5)
             if not isinstance(current_fps, int) or not (1 <= current_fps <= 30):
                 current_fps = 5
@@ -138,12 +137,11 @@ def render_cockpit_top(backend_ok: bool):
     return screen_placeholder, st.session_state.run_live, st.session_state.fps_target
 
 
-def _open_camera() -> cv2.VideoCapture | None:
+def _open_camera() -> Optional[cv2.VideoCapture]:
     """Try camera index 0, then 1, return opened cap or None."""
     for idx in (0, 1):
         cap = cv2.VideoCapture(idx)
         if cap.isOpened():
-            # Warm-up: discard first frame (avoids black frame on some drivers)
             cap.read()
             return cap
         cap.release()
@@ -169,7 +167,6 @@ def run_inference_loop(
     }
     ALERT_ICONS = {0: "🟢", 1: "🟡", 2: "🔴"}
 
-    # ── Idle state ────────────────────────────────────────────────────────────
     if not run_live:
         screen_placeholder.info("Toggle **Start Live Inference** above to begin streaming.")
         for ph in ph_list:
@@ -182,10 +179,8 @@ def run_inference_loop(
         )
         return
 
-    # ── Open / reuse VideoCapture ─────────────────────────────────────────────
     cap = st.session_state.get("cap")
     if cap is None or not cap.isOpened():
-        # Release stale handle if present
         if cap is not None:
             try:
                 cap.release()
@@ -206,11 +201,11 @@ def run_inference_loop(
 
     session_data: list = st.session_state.session_data
     session_start: float = st.session_state.session_start or time.time()
-    session_file: Path | None = st.session_state.current_session_file
+    session_file: Optional[Path] = st.session_state.current_session_file
 
     frame_interval = 1.0 / max(fps_target, 1)
     stop_requested = False
-    FRAMES_PER_BURST = max(1, min(fps_target * 2, 20))  # cap burst to avoid blocking UI
+    FRAMES_PER_BURST = max(1, min(fps_target * 2, 20))
 
     for _ in range(FRAMES_PER_BURST):
         if not st.session_state.run_live:
@@ -220,14 +215,12 @@ def run_inference_loop(
         t0 = time.time()
         ret, frame_bgr = cap.read()
         if not ret:
-            # Camera read failed mid-session — try to recover once
             cap.release()
             st.session_state.cap = None
             screen_placeholder.warning("⚠ Camera read failed — retrying next cycle.")
             break
 
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        # Use channels="RGB" only — no extra kwargs that vary by Streamlit version
         screen_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
 
         _, buf = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -289,7 +282,6 @@ def run_inference_loop(
 
     st.session_state.session_data = session_data
 
-    # ── Session ended — write final summary ───────────────────────────────────
     if stop_requested or not st.session_state.run_live:
         cap = st.session_state.get("cap")
         if cap is not None:
@@ -324,5 +316,4 @@ def run_inference_loop(
         st.rerun()
         return
 
-    # ── Keep looping — trigger next burst ─────────────────────────────────────
     st.rerun()
