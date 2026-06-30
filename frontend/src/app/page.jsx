@@ -58,14 +58,14 @@ export default function Home() {
         <Manifesto />
         {/* C — Drowsiness vs Distraction */}
         <DetectionDual />
-        
+        {/* D — Horizontal Tech Showcase */}
+        <TechCarousel />
         {/* E — Circuit Signature + Footer */}
         <CircuitSignature />
         
         {/* Live Cockpit Screen */}
         <CockpitScreen />
-        {/* D — Horizontal Tech Showcase */}
-        <TechCarousel />
+        
       </main>
     </>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
+import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const CARDS = [
@@ -36,63 +36,77 @@ function Card({ data }) {
 }
 
 export default function TechCarousel() {
-  const sectionRef = useRef(null);
-  const trackRef   = useRef(null);
+  const wrapperRef = useRef(null);
+  const containerRef = useRef(null);
+  const trackRef = useRef(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
     
+    // Create a context to safely manage and kill GSAP animations
     let ctx = gsap.context(() => {
       const track = trackRef.current;
       
-      const getScrollAmount = () => -(track.scrollWidth - window.innerWidth + 80);
+      if (!track || !wrapperRef.current || !containerRef.current) return;
 
-      gsap.to(track, {
+      const getScrollAmount = () => -(track.scrollWidth - window.innerWidth + 80); // 80px buffer
+
+      // The horizontal scroll animation
+      const tween = gsap.to(track, {
         x: getScrollAmount,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          pin: true, // Let GSAP wrap and pin the entire section natively
-          start: 'top top',
-          end: () => `+=${track.scrollWidth}`, // Scroll duration perfectly matches the horizontal track width
-          scrub: 1,
-          invalidateOnRefresh: true,
-        },
+        ease: 'none'
       });
 
-    }, sectionRef);
+      // The ScrollTrigger that pins the container and scrubs the animation
+      ScrollTrigger.create({
+        trigger: wrapperRef.current,
+        pin: containerRef.current,
+        start: 'top top',
+        end: () => `+=${track.scrollWidth}`, // Scroll distance equals track width
+        animation: tween,
+        scrub: 1,
+        invalidateOnRefresh: true,
+      });
 
-    return () => ctx.revert();
+    }, wrapperRef);
+
+    // Strict cleanup: Kill all ScrollTriggers and revert the context when component unmounts/re-renders
+    return () => {
+      ctx.revert();
+    };
   }, []);
 
   return (
-    <section 
-      ref={sectionRef} 
-      id="tech" 
-      style={{ 
-        height: '100vh', 
-        width: '100%', 
-        background: '#050505', 
-        position: 'relative', 
-        overflow: 'hidden', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        justifyContent: 'center',
-        zIndex: 10 // Forces it to sit strictly above the other sections when pinned
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px', flexShrink: 0 }}>
-        <div>
-          <p className="section-label" style={{ marginBottom: '8px' }}>/ 03 TECHNOLOGY</p>
-          <h2 className="font-display" style={{ fontSize: 'clamp(2rem, 5vw, 5rem)', fontWeight: 700, letterSpacing: '-0.02em', color: '#F5F5F5', lineHeight: 1 }}>THE STACK</h2>
+    // Wrapper: defines the total scrollable area for the pin
+    <section ref={wrapperRef} id="tech" style={{ background: '#050505', position: 'relative' }}>
+      
+      {/* Container: The element that gets physically pinned to the screen */}
+      <div 
+        ref={containerRef} 
+        style={{ 
+          height: '100vh', 
+          width: '100%', 
+          overflow: 'hidden', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center',
+          position: 'relative' // Ensure positioning context for GSAP
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px', flexShrink: 0 }}>
+          <div>
+            <p className="section-label" style={{ marginBottom: '8px' }}>/ 03 TECHNOLOGY</p>
+            <h2 className="font-display" style={{ fontSize: 'clamp(2rem, 5vw, 5rem)', fontWeight: 700, letterSpacing: '-0.02em', color: '#F5F5F5', lineHeight: 1 }}>THE STACK</h2>
+          </div>
+          <p className="section-label" style={{ opacity: 0.5 }}>SCROLL →</p>
         </div>
-        <p className="section-label" style={{ opacity: 0.5 }}>SCROLL →</p>
-      </div>
 
-      <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)', flexShrink: 0 }}>
-        <div ref={trackRef} style={{ display: 'flex', gap: '24px', width: 'max-content', willChange: 'transform' }}>
-          {CARDS.map((card) => <Card key={card.id} data={card} />)}
-          <div style={{ width: '10vw' }} />
+        <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)', flexShrink: 0 }}>
+          {/* Track: the element that moves horizontally */}
+          <div ref={trackRef} style={{ display: 'flex', gap: '24px', width: 'max-content', willChange: 'transform' }}>
+            {CARDS.map((card) => <Card key={card.id} data={card} />)}
+            <div style={{ width: '10vw' }} /> {/* Spacer */}
+          </div>
         </div>
       </div>
     </section>
