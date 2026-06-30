@@ -61,10 +61,11 @@ export default function Home() {
         
         {/* E — Circuit Signature + Footer */}
         <CircuitSignature />
-        {/* D — Horizontal Tech Showcase */}
-        <TechCarousel />
+        
         {/* Live Cockpit Screen */}
         <CockpitScreen />
+        {/* D — Horizontal Tech Showcase */}
+        <TechCarousel />
       </main>
     </>
   );
