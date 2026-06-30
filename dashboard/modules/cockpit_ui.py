@@ -196,7 +196,7 @@ def run_inference_loop(
 
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
         # ✅ use_container_width replaces deprecated use_column_width
-        screen_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
+        screen_placeholder.image(frame_rgb, channels="RGB", width="stretch")
 
         _, buf = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
         b64 = base64.b64encode(buf.tobytes()).decode()

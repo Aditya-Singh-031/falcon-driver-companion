@@ -3,27 +3,27 @@
 import { useRef, useEffect, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, Environment, ContactShadows, PerspectiveCamera, useAnimations } from '@react-three/drei';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import * as THREE from 'three';
 import HudOverlay from './HudOverlay';
 
-// The Cinematic Path: Outside → Approaching Door → Inside Driver's Seat
+// Camera Path
 const CAM_POSITIONS = [
-  { pos: [6.0, 2.0, 7.0],    target: [0, 0.5, 0] },        // 0%   - Wide outside shot
-  { pos: [2.5, 1.2, 2.5],    target: [0, 0.6, -0.5] },     // 50%  - Approaching the opening door
-  { pos: [0.35, 0.9, 0.2],   target: [0.35, 0.7, -1.0] }   // 100% - Settled inside cabin, looking at dashboard
+  { pos: [6.0, 2.0, 7.0],    target: [0, 0.5, 0] },
+  { pos: [2.5, 1.2, 2.5],    target: [0, 0.6, -0.5] },
+  { pos: [0.35, 0.9, 0.2],   target: [0.35, 0.7, -1.0] }
 ];
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 function lerpVec3(from, to, t) {
   return [
-    lerp(from[0], to[0], t),
-    lerp(from[1], to[1], t),
-    lerp(from[2], to[2], t),
+    lerp(from[0], to[0], t), lerp(from[1], to[1], t), lerp(from[2], to[2], t),
   ];
 }
 
 function getCamAtProgress(p) {
-  // CRITICAL FIX: Clamp progress between 0 and 1 to prevent "Black Void" array crashes
+  // CRITICAL: Prevent array crash on Mac trackpad bounce
   const safeP = Math.max(0, Math.min(1, p));
   const count = CAM_POSITIONS.length - 1;
   const segment = Math.min(safeP * count, count - 0.00001);
@@ -37,7 +37,6 @@ function getCamAtProgress(p) {
   };
 }
 
-// Smooth camera rig driven by scroll progress
 function CameraRig({ progressRef }) {
   const { camera } = useThree();
   const targetRef = useRef(new THREE.Vector3(0, 0.5, 0));
@@ -50,11 +49,9 @@ function CameraRig({ progressRef }) {
     targetRef.current.lerp(new THREE.Vector3(...target), 0.05);
     camera.lookAt(targetRef.current);
   });
-
   return null;
 }
 
-// Load the Lambo GLB and scrub its animations
 function LamborghiniModel({ progressRef }) {
   const groupRef = useRef();
   const { scene, animations } = useGLTF('/models/lamborghini_centenario_roadster_sdc.glb');
@@ -66,27 +63,21 @@ function LamborghiniModel({ progressRef }) {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
-        if (child.material) {
-          child.material.envMapIntensity = 1.5;
-        }
+        if (child.material) child.material.envMapIntensity = 1.5;
       }
     });
   }, [scene]);
 
   useFrame(() => {
-    // Scrub the door opening animation based on scroll progress
     if (actions && Object.keys(actions).length > 0) {
-      const actionName = Object.keys(actions)[0];
-      const action = actions[actionName];
+      const action = actions[Object.keys(actions)[0]];
       if (action) {
         if (!action.isRunning()) action.play();
         action.paused = true; 
         
         const p = Math.max(0, Math.min(1, progressRef.current || 0));
-        // Door opens from 10% scroll to 50% scroll
+        // Door fully opens during the first 50% of the scroll
         const animProgress = Math.max(0, Math.min(1, (p - 0.1) / 0.4));
-        
-        // Reverted to the working action.time method!
         action.time = animProgress * action.getClip().duration;
       }
     }
@@ -95,31 +86,27 @@ function LamborghiniModel({ progressRef }) {
   return <primitive ref={groupRef} object={scene} scale={1} position={[0, -0.5, 0]} />
 }
 
-// Inner canvas scene
 function Scene({ progressRef }) {
   return (
     <>
       <PerspectiveCamera makeDefault fov={55} near={0.1} far={200} position={[6.0, 2.0, 7.0]} />
       <CameraRig progressRef={progressRef} />
-
       <ambientLight intensity={0.3} />
       <directionalLight position={[10, 10, 5]} intensity={2.5} castShadow />
       <pointLight position={[-5, 3, -5]} intensity={1.5} color="#00F3FF" />
       <pointLight position={[5,  1, 5]}  intensity={1.0} color="#D4F000" />
-
       <Environment preset="night" />
-
       <Suspense fallback={null}>
         <LamborghiniModel progressRef={progressRef} />
       </Suspense>
-
       <ContactShadows position={[0, -0.5, 0]} opacity={0.6} scale={20} blur={2} far={10} />
     </>
   );
 }
 
 export default function HeroScene() {
-  const sectionRef   = useRef(null);
+  const wrapperRef   = useRef(null);
+  const containerRef = useRef(null);
   const progressRef  = useRef(0);
   const hudRef       = useRef(null);
   const titleRef     = useRef(null);
@@ -127,44 +114,40 @@ export default function HeroScene() {
   const indicatorRef = useRef(null);
 
   useEffect(() => {
-    let ctx;
-    async function init() {
-      const { gsap } = await import('gsap');
-      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-      gsap.registerPlugin(ScrollTrigger);
-
-      ctx = gsap.context(() => {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top top',
-            end: 'bottom bottom', // Tied directly to the 400vh parent
-            scrub: 1.5,
-            onUpdate: (self) => {
-              progressRef.current = self.progress;
-            },
+    gsap.registerPlugin(ScrollTrigger);
+    let ctx = gsap.context(() => {
+      
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: wrapperRef.current,
+          pin: containerRef.current, // Pin the inner container, not the wrapper!
+          start: 'top top',
+          end: '+=300%', // Scroll for exactly 3 extra screen heights
+          scrub: 1.5,
+          onUpdate: (self) => {
+            progressRef.current = self.progress;
           },
-        });
+        },
+      });
 
-        tl.to(titleRef.current, { yPercent: -40, ease: 'none' }, 0);
-        tl.to([subtitleRef.current, indicatorRef.current], { opacity: 0, duration: 0.1, ease: 'none' }, 0.05);
+      tl.to(titleRef.current, { yPercent: -40, ease: 'none' }, 0);
+      tl.to([subtitleRef.current, indicatorRef.current], { opacity: 0, duration: 0.1, ease: 'none' }, 0.05);
 
-        tl.to(hudRef.current.querySelectorAll('.hud-corner'), { opacity: 1, duration: 0.05, stagger: 0.01, ease: 'power2.out' }, 0.75)
-          .to(hudRef.current.querySelectorAll('.hud-panel'), { x: 0, opacity: 1, duration: 0.1, stagger: 0.02, ease: 'power2.out' }, 0.8)
-          .to(hudRef.current.querySelectorAll('.hud-mesh-line'), { scaleX: 1, opacity: 0.6, duration: 0.1, stagger: 0.01, ease: 'power2.out' }, 0.85);
+      tl.to(hudRef.current.querySelectorAll('.hud-corner'), { opacity: 1, duration: 0.05, stagger: 0.01, ease: 'power2.out' }, 0.75)
+        .to(hudRef.current.querySelectorAll('.hud-panel'), { x: 0, opacity: 1, duration: 0.1, stagger: 0.02, ease: 'power2.out' }, 0.8)
+        .to(hudRef.current.querySelectorAll('.hud-mesh-line'), { scaleX: 1, opacity: 0.6, duration: 0.1, stagger: 0.01, ease: 'power2.out' }, 0.85);
 
-      }, sectionRef);
-    }
-    init();
-    return () => ctx && ctx.revert();
+    }, wrapperRef);
+
+    return () => ctx.revert();
   }, []);
 
   return (
-    // Height 400vh gives us exactly 4 screen heights to scroll down through the timeline
-    <section ref={sectionRef} id="system" style={{ height: '400vh', background: '#050505', position: 'relative' }}>
+    // Wrapper provides the physical scrolling space
+    <div ref={wrapperRef} id="system" style={{ background: '#050505', position: 'relative' }}>
       
-      {/* NATIVE CSS STICKY: Bypasses GSAP pinning completely. Physically unbreakable. */}
-      <div style={{ position: 'sticky', top: 0, height: '100vh', width: '100%', overflow: 'hidden' }}>
+      {/* The container that gets pinned to the screen by GSAP */}
+      <section ref={containerRef} style={{ height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative' }}>
         
         <div ref={titleRef} aria-hidden="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, pointerEvents: 'none' }}>
           <span className="font-display" style={{ fontSize: 'clamp(6rem, 22vw, 22rem)', fontWeight: 700, letterSpacing: '-0.02em', color: 'transparent', WebkitTextStroke: '1px rgba(212,240,0,0.08)', userSelect: 'none', lineHeight: 1 }}>
@@ -203,8 +186,8 @@ export default function HeroScene() {
             50% { opacity: 0.3; transform: scaleY(0.5); transform-origin: top; }
           }
         `}</style>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }
 

@@ -1,0 +1,8 @@
+timestamp,elapsed_s,driver_state,alert_level,drowsiness,drowsiness_confidence,distraction,distraction_confidence,latency_ms,yaw,pitch,roll
+2026-06-30T10:04:32.304,5.913,drowsy,1,drowsy,0.9004,unknown,0.0,2616.5,,,
+2026-06-30T10:04:33.788,8.751,critical,2,drowsy,0.8321,distracted_left,0.9,1263.7,,,
+2026-06-30T10:04:34.942,10.037,critical,2,drowsy,0.8318,distracted_left,0.9,1134.7,,,
+2026-06-30T10:04:35.886,11.19,critical,2,drowsy,0.8475,distracted_left,0.9,928.2,,,
+2026-06-30T10:04:36.478,12.133,critical,2,drowsy,0.8877,distracted_left,0.9,573.8,,,
+2026-06-30T10:04:39.271,12.732,critical,2,drowsy,0.9445,distracted_left,0.9,2767.4,,,
+2026-06-30T10:04:41.480,15.519,safe,0,non_drowsy,0.9496,unknown,0.0,2172.8,,,

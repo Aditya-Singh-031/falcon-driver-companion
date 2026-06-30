@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const CARDS = [
   { id: 'facemesh', num: '01', title: 'MediaPipe FaceMesh', sub: 'LANDMARK DETECTION', accent: '#00F3FF', body: '468 3D facial landmarks at 30+ fps on CPU. Drives EAR computation and PERCLOS analysis for drowsiness state.', metrics: [['LANDMARKS', '468'], ['FPS', '35+'], ['LATENCY', '8ms']], logo: 'MEDIAPIPE' },
@@ -34,63 +36,56 @@ function Card({ data }) {
 }
 
 export default function TechCarousel() {
+  const wrapperRef = useRef(null);
   const sectionRef = useRef(null);
   const trackRef   = useRef(null);
 
   useEffect(() => {
-    let ctx;
-    async function init() {
-      const { gsap } = await import('gsap');
-      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-      gsap.registerPlugin(ScrollTrigger);
+    gsap.registerPlugin(ScrollTrigger);
+    
+    let ctx = gsap.context(() => {
+      const track = trackRef.current;
 
-      ctx = gsap.context(() => {
-        const track = trackRef.current;
-        const getDistance = () => -(track.scrollWidth - window.innerWidth + window.innerWidth * 0.1);
+      gsap.to(track, {
+        x: () => -(track.scrollWidth - window.innerWidth + window.innerWidth * 0.1),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: wrapperRef.current,
+          pin: sectionRef.current, // Pin the inner container
+          start: 'top top',
+          end: '+=200%', // Scroll for 2 screen heights
+          scrub: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+    }, wrapperRef);
 
-        gsap.to(track, {
-          x: getDistance,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top top',
-            end: 'bottom bottom', // Tied natively to the 400vh parent
-            scrub: 1,
-            invalidateOnRefresh: true,
-          },
-        });
-      }, sectionRef);
-    }
-    init();
-    return () => ctx && ctx.revert();
+    return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} id="tech" style={{ height: '400vh', background: '#050505', position: 'relative' }}>
+    // Wrapper creates the vertical scroll space
+    <div ref={wrapperRef} id="tech" style={{ background: '#050505', position: 'relative' }}>
       
-      {/* NATIVE CSS STICKY: Unbreakable horizontal layout */}
-      <div style={{ position: 'sticky', top: 0, height: '100vh', width: '100%', overflow: 'hidden' }}>
+      {/* Container gets pinned by GSAP */}
+      <section ref={sectionRef} style={{ height: '100vh', width: '100vw', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         
-        {/* Absolute centering perfectly protects the Flexbox children */}
-        <div style={{ position: 'absolute', top: '15vh', left: 0, right: 0 }}>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px' }}>
-            <div>
-              <p className="section-label" style={{ marginBottom: '8px' }}>/ 03 TECHNOLOGY</p>
-              <h2 className="font-display" style={{ fontSize: 'clamp(2rem, 5vw, 5rem)', fontWeight: 700, letterSpacing: '-0.02em', color: '#F5F5F5', lineHeight: 1 }}>THE STACK</h2>
-            </div>
-            <p className="section-label" style={{ opacity: 0.5 }}>SCROLL →</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px', flexShrink: 0 }}>
+          <div>
+            <p className="section-label" style={{ marginBottom: '8px' }}>/ 03 TECHNOLOGY</p>
+            <h2 className="font-display" style={{ fontSize: 'clamp(2rem, 5vw, 5rem)', fontWeight: 700, letterSpacing: '-0.02em', color: '#F5F5F5', lineHeight: 1 }}>THE STACK</h2>
           </div>
-          
-          <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)' }}>
-            <div ref={trackRef} style={{ display: 'flex', gap: '24px', width: 'max-content', willChange: 'transform' }}>
-              {CARDS.map((card) => <Card key={card.id} data={card} />)}
-              <div style={{ width: '10vw' }} />
-            </div>
-          </div>
-
+          <p className="section-label" style={{ opacity: 0.5 }}>SCROLL →</p>
         </div>
-      </div>
-    </section>
+
+        <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)', flexShrink: 0 }}>
+          <div ref={trackRef} style={{ display: 'flex', gap: '24px', width: 'max-content', willChange: 'transform' }}>
+            {CARDS.map((card) => <Card key={card.id} data={card} />)}
+            <div style={{ width: '10vw' }} />
+          </div>
+        </div>
+
+      </section>
+    </div>
   );
 }

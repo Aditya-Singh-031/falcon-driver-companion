@@ -54,12 +54,13 @@ export default function Home() {
       <main id="main-content">
         {/* A — Hero: Lamborghini + AR HUD overlay */}
         <HeroScene />
+        {/* D — Horizontal Tech Showcase */}
+        <TechCarousel />
         {/* B — Kinetic Manifesto */}
         <Manifesto />
         {/* C — Drowsiness vs Distraction */}
         <DetectionDual />
-        {/* D — Horizontal Tech Showcase */}
-        <TechCarousel />
+        
         {/* E — Circuit Signature + Footer */}
         <CircuitSignature />
         {/* Live Cockpit Screen */}
