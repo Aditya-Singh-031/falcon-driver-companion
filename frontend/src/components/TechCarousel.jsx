@@ -61,7 +61,7 @@ export default function TechCarousel() {
   const trackRef = useRef(null);
 
   useEffect(() => {
-    let ctx; // Store the GSAP context
+    let ctx; 
 
     async function init() {
       const { gsap } = await import('gsap');
@@ -72,33 +72,36 @@ export default function TechCarousel() {
       const section = sectionRef.current;
       if (!track || !section) return;
 
-      // Wrap animations in a context for easy cleanup
       ctx = gsap.context(() => {
-        const totalWidth = track.scrollWidth - window.innerWidth + 100;
+        // Dynamically calculate the exact width we need to move
+        const getScrollAmount = () => {
+          let trackWidth = track.scrollWidth;
+          return -(trackWidth - window.innerWidth + 80); // 80px buffer
+        };
 
         gsap.to(track, {
-          x: -totalWidth,
+          x: getScrollAmount,
           ease: 'none',
           scrollTrigger: {
             trigger: section,
             start: 'top top',
-            end: 'bottom bottom',
+            end: () => `+=${track.scrollWidth - window.innerWidth + 80}`, // Exact end point removes the black void
+            pin: true,
             scrub: 1,
-            invalidateOnRefresh: true, // Recalculates sizes on window resize
+            invalidateOnRefresh: true, // Recalculates sizes instantly if window resizes
           },
         });
       }, sectionRef);
     }
     
     init();
-
-    // The Magic Fix: Destroy the animation on unmount so they don't duplicate
     return () => ctx && ctx.revert(); 
   }, []);
 
   return (
-    <section ref={sectionRef} id="tech" style={{ height: '300vh', background: '#050505', position: 'relative' }}>
-      <div style={{ position: 'sticky', top: 0, height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
+    // Removed 300vh and sticky. GSAP pin handles it dynamically now.
+    <section ref={sectionRef} id="tech" style={{ background: '#050505', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px', flexShrink: 0 }}>
           <div>
@@ -109,9 +112,11 @@ export default function TechCarousel() {
         </div>
 
         <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)', flexShrink: 0 }}>
-          <div ref={trackRef} style={{ display: 'flex', alignItems: 'flex-start', willChange: 'transform' }}>
+          {/* CRITICAL FIX: Added width: 'max-content' here so Cards 1 & 2 don't get squished off-screen */}
+          <div ref={trackRef} style={{ display: 'flex', alignItems: 'flex-start', width: 'max-content', willChange: 'transform' }}>
             {CARDS.map((card) => <Card key={card.id} data={card} />)}
-            <div style={{ flexShrink: 0, width: '50vw' }} />
+            {/* Reduced spacer width to stop empty scrolling at the end */}
+            <div style={{ flexShrink: 0, width: '10vw' }} /> 
           </div>
         </div>
 
