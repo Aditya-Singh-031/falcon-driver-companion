@@ -3,8 +3,6 @@
 import { useRef, useEffect, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, Environment, ContactShadows, PerspectiveCamera, useAnimations } from '@react-three/drei';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import * as THREE from 'three';
 import HudOverlay from './HudOverlay';
 
@@ -25,6 +23,7 @@ function lerpVec3(from, to, t) {
 }
 
 function getCamAtProgress(p) {
+  // CRITICAL FIX: Clamp progress between 0 and 1 to prevent "Black Void" array crashes
   const safeP = Math.max(0, Math.min(1, p));
   const count = CAM_POSITIONS.length - 1;
   const segment = Math.min(safeP * count, count - 0.00001);
@@ -59,7 +58,7 @@ function CameraRig({ progressRef }) {
 function LamborghiniModel({ progressRef }) {
   const groupRef = useRef();
   const { scene, animations } = useGLTF('/models/lamborghini_centenario_roadster_sdc.glb');
-  const { actions, mixer } = useAnimations(animations, groupRef);
+  const { actions } = useAnimations(animations, groupRef);
 
   useEffect(() => {
     if (!scene) return;
@@ -75,11 +74,11 @@ function LamborghiniModel({ progressRef }) {
   }, [scene]);
 
   useFrame(() => {
+    // Scrub the door opening animation based on scroll progress
     if (actions && Object.keys(actions).length > 0) {
       const actionName = Object.keys(actions)[0];
       const action = actions[actionName];
       if (action) {
-        // Ensure the action is playing but controlled by us
         if (!action.isRunning()) action.play();
         action.paused = true; 
         
@@ -87,8 +86,8 @@ function LamborghiniModel({ progressRef }) {
         // Door opens from 10% scroll to 50% scroll
         const animProgress = Math.max(0, Math.min(1, (p - 0.1) / 0.4));
         
-        // Force the mixer to update to the exact time
-        mixer.setTime(animProgress * action.getClip().duration);
+        // Reverted to the working action.time method!
+        action.time = animProgress * action.getClip().duration;
       }
     }
   });
@@ -128,74 +127,83 @@ export default function HeroScene() {
   const indicatorRef = useRef(null);
 
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-    let ctx = gsap.context(() => {
-      
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: '+=3000px', // Creates exactly 3000px of scroll space
-          pin: true,       // Locks the section in place
-          scrub: 1.5,
-          onUpdate: (self) => {
-            progressRef.current = self.progress;
+    let ctx;
+    async function init() {
+      const { gsap } = await import('gsap');
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      gsap.registerPlugin(ScrollTrigger);
+
+      ctx = gsap.context(() => {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top top',
+            end: 'bottom bottom', // Tied directly to the 400vh parent
+            scrub: 1.5,
+            onUpdate: (self) => {
+              progressRef.current = self.progress;
+            },
           },
-        },
-      });
+        });
 
-      tl.to(titleRef.current, { yPercent: -40, ease: 'none' }, 0);
-      tl.to([subtitleRef.current, indicatorRef.current], { opacity: 0, duration: 0.1, ease: 'none' }, 0.05);
+        tl.to(titleRef.current, { yPercent: -40, ease: 'none' }, 0);
+        tl.to([subtitleRef.current, indicatorRef.current], { opacity: 0, duration: 0.1, ease: 'none' }, 0.05);
 
-      tl.to(hudRef.current.querySelectorAll('.hud-corner'), { opacity: 1, duration: 0.05, stagger: 0.01, ease: 'power2.out' }, 0.75)
-        .to(hudRef.current.querySelectorAll('.hud-panel'), { x: 0, opacity: 1, duration: 0.1, stagger: 0.02, ease: 'power2.out' }, 0.8)
-        .to(hudRef.current.querySelectorAll('.hud-mesh-line'), { scaleX: 1, opacity: 0.6, duration: 0.1, stagger: 0.01, ease: 'power2.out' }, 0.85);
+        tl.to(hudRef.current.querySelectorAll('.hud-corner'), { opacity: 1, duration: 0.05, stagger: 0.01, ease: 'power2.out' }, 0.75)
+          .to(hudRef.current.querySelectorAll('.hud-panel'), { x: 0, opacity: 1, duration: 0.1, stagger: 0.02, ease: 'power2.out' }, 0.8)
+          .to(hudRef.current.querySelectorAll('.hud-mesh-line'), { scaleX: 1, opacity: 0.6, duration: 0.1, stagger: 0.01, ease: 'power2.out' }, 0.85);
 
-    }, sectionRef);
-
+      }, sectionRef);
+    }
+    init();
     return () => ctx && ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} id="system" style={{ height: '100vh', width: '100vw', position: 'relative', background: '#050505', overflow: 'hidden' }}>
+    // Height 400vh gives us exactly 4 screen heights to scroll down through the timeline
+    <section ref={sectionRef} id="system" style={{ height: '400vh', background: '#050505', position: 'relative' }}>
       
-      <div ref={titleRef} aria-hidden="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, pointerEvents: 'none' }}>
-        <span className="font-display" style={{ fontSize: 'clamp(6rem, 22vw, 22rem)', fontWeight: 700, letterSpacing: '-0.02em', color: 'transparent', WebkitTextStroke: '1px rgba(212,240,0,0.08)', userSelect: 'none', lineHeight: 1 }}>
-          FALCON
-        </span>
-      </div>
-
-      <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
-        <Canvas dpr={1} gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }} shadows>
-          <Scene progressRef={progressRef} />
-        </Canvas>
-      </div>
-
-      <div ref={hudRef} style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none' }}>
-        <HudOverlay />
-      </div>
-
-      <div ref={subtitleRef} style={{ position: 'absolute', bottom: '40px', left: '40px', right: '40px', zIndex: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', pointerEvents: 'none' }}>
-        <div>
-          <p className="section-label" style={{ marginBottom: '8px' }}>SCROLL TO ENTER</p>
-          <div style={{ width: '40px', height: '1px', background: '#D4F000' }} />
+      {/* NATIVE CSS STICKY: Bypasses GSAP pinning completely. Physically unbreakable. */}
+      <div style={{ position: 'sticky', top: 0, height: '100vh', width: '100%', overflow: 'hidden' }}>
+        
+        <div ref={titleRef} aria-hidden="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, pointerEvents: 'none' }}>
+          <span className="font-display" style={{ fontSize: 'clamp(6rem, 22vw, 22rem)', fontWeight: 700, letterSpacing: '-0.02em', color: 'transparent', WebkitTextStroke: '1px rgba(212,240,0,0.08)', userSelect: 'none', lineHeight: 1 }}>
+            FALCON
+          </span>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <p className="section-label">EDGE AI · REAL-TIME · ON-DEVICE</p>
-          <p className="font-mono" style={{ fontSize: '0.65rem', color: '#D4F000', marginTop: '4px' }}>v2.1.0 · FALCON ENGINE</p>
+
+        <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
+          <Canvas dpr={1} gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }} shadows>
+            <Scene progressRef={progressRef} />
+          </Canvas>
         </div>
-      </div>
 
-      <div ref={indicatorRef} style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', zIndex: 4 }}>
-        <div style={{ width: '1px', height: '60px', background: 'linear-gradient(to bottom, transparent, #D4F000)', animation: 'scrollIndicator 1.5s ease-in-out infinite' }} />
-      </div>
+        <div ref={hudRef} style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none' }}>
+          <HudOverlay />
+        </div>
 
-      <style>{`
-        @keyframes scrollIndicator {
-          0%, 100% { opacity: 1; transform: scaleY(1); transform-origin: top; }
-          50% { opacity: 0.3; transform: scaleY(0.5); transform-origin: top; }
-        }
-      `}</style>
+        <div ref={subtitleRef} style={{ position: 'absolute', bottom: '40px', left: '40px', right: '40px', zIndex: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', pointerEvents: 'none' }}>
+          <div>
+            <p className="section-label" style={{ marginBottom: '8px' }}>SCROLL TO ENTER</p>
+            <div style={{ width: '40px', height: '1px', background: '#D4F000' }} />
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <p className="section-label">EDGE AI · REAL-TIME · ON-DEVICE</p>
+            <p className="font-mono" style={{ fontSize: '0.65rem', color: '#D4F000', marginTop: '4px' }}>v2.1.0 · FALCON ENGINE</p>
+          </div>
+        </div>
+
+        <div ref={indicatorRef} style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', zIndex: 4 }}>
+          <div style={{ width: '1px', height: '60px', background: 'linear-gradient(to bottom, transparent, #D4F000)', animation: 'scrollIndicator 1.5s ease-in-out infinite' }} />
+        </div>
+
+        <style>{`
+          @keyframes scrollIndicator {
+            0%, 100% { opacity: 1; transform: scaleY(1); transform-origin: top; }
+            50% { opacity: 0.3; transform: scaleY(0.5); transform-origin: top; }
+          }
+        `}</style>
+      </div>
     </section>
   );
 }

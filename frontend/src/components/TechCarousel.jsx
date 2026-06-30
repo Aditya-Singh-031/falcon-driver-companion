@@ -1,10 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
 
 const CARDS = [
   { id: 'facemesh', num: '01', title: 'MediaPipe FaceMesh', sub: 'LANDMARK DETECTION', accent: '#00F3FF', body: '468 3D facial landmarks at 30+ fps on CPU. Drives EAR computation and PERCLOS analysis for drowsiness state.', metrics: [['LANDMARKS', '468'], ['FPS', '35+'], ['LATENCY', '8ms']], logo: 'MEDIAPIPE' },
@@ -16,7 +12,7 @@ const CARDS = [
 
 function Card({ data }) {
   return (
-    <div style={{ flexShrink: 0, width: 'clamp(280px, 28vw, 380px)', marginRight: '24px' }}>
+    <div style={{ flexShrink: 0, width: 'clamp(280px, 28vw, 380px)' }}>
       <div style={{ height: '480px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', padding: '36px 32px', position: 'relative', overflow: 'hidden' }}>
         <p className="font-display" style={{ fontSize: '4rem', fontWeight: 700, color: 'rgba(255,255,255,0.04)', lineHeight: 1, marginBottom: '16px' }}>{data.num}</p>
         <span className="font-mono" style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: data.accent, border: `1px solid ${data.accent}44`, padding: '3px 8px', display: 'inline-block', marginBottom: '20px' }}>{data.logo}</span>
@@ -42,54 +38,58 @@ export default function TechCarousel() {
   const trackRef   = useRef(null);
 
   useEffect(() => {
-    let ctx = gsap.context(() => {
-      const track = trackRef.current;
-      
-      const getScrollAmount = () => {
-        const trackWidth = track.scrollWidth;
-        return -(trackWidth - window.innerWidth + window.innerWidth * 0.1); 
-      };
+    let ctx;
+    async function init() {
+      const { gsap } = await import('gsap');
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      gsap.registerPlugin(ScrollTrigger);
 
-      const tween = gsap.to(track, {
-        x: getScrollAmount,
-        ease: 'none'
-      });
+      ctx = gsap.context(() => {
+        const track = trackRef.current;
+        const getDistance = () => -(track.scrollWidth - window.innerWidth + window.innerWidth * 0.1);
 
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: () => `+=${track.scrollWidth}`, // Scroll duration matches track width
-        pin: true,
-        animation: tween,
-        scrub: 1,
-        invalidateOnRefresh: true,
-      });
-
-    }, sectionRef);
-
-    return () => ctx.revert();
+        gsap.to(track, {
+          x: getDistance,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top top',
+            end: 'bottom bottom', // Tied natively to the 400vh parent
+            scrub: 1,
+            invalidateOnRefresh: true,
+          },
+        });
+      }, sectionRef);
+    }
+    init();
+    return () => ctx && ctx.revert();
   }, []);
 
   return (
-    <section ref={sectionRef} id="tech" style={{ height: '100vh', width: '100vw', background: '#050505', position: 'relative', overflow: 'hidden' }}>
+    <section ref={sectionRef} id="tech" style={{ height: '400vh', background: '#050505', position: 'relative' }}>
       
-      <div style={{ height: '100vh', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      {/* NATIVE CSS STICKY: Unbreakable horizontal layout */}
+      <div style={{ position: 'sticky', top: 0, height: '100vh', width: '100%', overflow: 'hidden' }}>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px', flexShrink: 0 }}>
-          <div>
-            <p className="section-label" style={{ marginBottom: '8px' }}>/ 03 TECHNOLOGY</p>
-            <h2 className="font-display" style={{ fontSize: 'clamp(2rem, 5vw, 5rem)', fontWeight: 700, letterSpacing: '-0.02em', color: '#F5F5F5', lineHeight: 1 }}>THE STACK</h2>
+        {/* Absolute centering perfectly protects the Flexbox children */}
+        <div style={{ position: 'absolute', top: '15vh', left: 0, right: 0 }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px' }}>
+            <div>
+              <p className="section-label" style={{ marginBottom: '8px' }}>/ 03 TECHNOLOGY</p>
+              <h2 className="font-display" style={{ fontSize: 'clamp(2rem, 5vw, 5rem)', fontWeight: 700, letterSpacing: '-0.02em', color: '#F5F5F5', lineHeight: 1 }}>THE STACK</h2>
+            </div>
+            <p className="section-label" style={{ opacity: 0.5 }}>SCROLL →</p>
           </div>
-          <p className="section-label" style={{ opacity: 0.5 }}>SCROLL →</p>
-        </div>
-
-        <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)', flexShrink: 0 }}>
-          <div ref={trackRef} style={{ display: 'flex', alignItems: 'flex-start', width: 'max-content', willChange: 'transform' }}>
-            {CARDS.map((card) => <Card key={card.id} data={card} />)}
-            <div style={{ flexShrink: 0, width: '10vw' }} />
+          
+          <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)' }}>
+            <div ref={trackRef} style={{ display: 'flex', gap: '24px', width: 'max-content', willChange: 'transform' }}>
+              {CARDS.map((card) => <Card key={card.id} data={card} />)}
+              <div style={{ width: '10vw' }} />
+            </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </section>
   );
