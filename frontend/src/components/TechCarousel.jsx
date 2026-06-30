@@ -1,42 +1,23 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const CARDS = [
-  {
-    id: 'facemesh', num: '01', title: 'MediaPipe FaceMesh', sub: 'LANDMARK DETECTION', accent: '#00F3FF',
-    body: '468 3D facial landmarks at 30+ fps on CPU. Drives EAR computation and PERCLOS analysis for drowsiness state.',
-    metrics: [['LANDMARKS', '468'], ['FPS', '35+'], ['LATENCY', '8ms']], logo: 'MEDIAPIPE',
-  },
-  {
-    id: 'efficientnet', num: '02', title: 'EfficientNet-B0', sub: 'DISTRACTION CLASSIFIER', accent: '#D4F000',
-    body: 'Lightweight CNN fine-tuned on in-cabin datasets. Classifies 5 distraction states with 94% top-1 accuracy.',
-    metrics: [['ACCURACY', '94%'], ['PARAMS', '5.3M'], ['LATENCY', '14ms']], logo: 'PYTORCH',
-  },
-  {
-    id: 'context', num: '03', title: 'Context Engine', sub: 'ALERT ARBITRATION', accent: '#FF6B35',
-    body: 'Multi-signal fusion layer. Combines drowsiness score + distraction class + temporal context to minimise false alerts.',
-    metrics: [['FALSE POS', '< 2%'], ['WINDOW', '3s'], ['SIGNALS', '4']], logo: 'FALCON',
-  },
-  {
-    id: 'fastapi', num: '04', title: 'FastAPI Backend', sub: 'INFERENCE SERVER', accent: '#00C896',
-    body: 'Async REST API serving inference results at sub-20ms p99. WebSocket stream for live frame delivery to dashboard.',
-    metrics: [['P99', '< 20ms'], ['ENDPOINT', '/infer'], ['WS', 'LIVE']], logo: 'FASTAPI',
-  },
-  {
-    id: 'streamlit', num: '05', title: 'Streamlit Cockpit', sub: 'MONITORING DASHBOARD', accent: '#FF4B4B',
-    body: 'Live webcam inference, session telemetry, alert timeline and log export. Full cockpit embedded below.',
-    metrics: [['PORT', '8501'], ['FPS', 'LIVE'], ['CHARTS', 'REALTIME']], logo: 'STREAMLIT',
-  },
+  { id: 'facemesh', num: '01', title: 'MediaPipe FaceMesh', sub: 'LANDMARK DETECTION', accent: '#00F3FF', body: '468 3D facial landmarks at 30+ fps on CPU. Drives EAR computation and PERCLOS analysis for drowsiness state.', metrics: [['LANDMARKS', '468'], ['FPS', '35+'], ['LATENCY', '8ms']], logo: 'MEDIAPIPE' },
+  { id: 'efficientnet', num: '02', title: 'EfficientNet-B0', sub: 'DISTRACTION CLASSIFIER', accent: '#D4F000', body: 'Lightweight CNN fine-tuned on in-cabin datasets. Classifies 5 distraction states with 94% top-1 accuracy.', metrics: [['ACCURACY', '94%'], ['PARAMS', '5.3M'], ['LATENCY', '14ms']], logo: 'PYTORCH' },
+  { id: 'context', num: '03', title: 'Context Engine', sub: 'ALERT ARBITRATION', accent: '#FF6B35', body: 'Multi-signal fusion layer. Combines drowsiness score + distraction class + temporal context to minimise false alerts.', metrics: [['FALSE POS', '< 2%'], ['WINDOW', '3s'], ['SIGNALS', '4']], logo: 'FALCON' },
+  { id: 'fastapi', num: '04', title: 'FastAPI Backend', sub: 'INFERENCE SERVER', accent: '#00C896', body: 'Async REST API serving inference results at sub-20ms p99. WebSocket stream for live frame delivery to dashboard.', metrics: [['P99', '< 20ms'], ['ENDPOINT', '/infer'], ['WS', 'LIVE']], logo: 'FASTAPI' },
+  { id: 'streamlit', num: '05', title: 'Streamlit Cockpit', sub: 'MONITORING DASHBOARD', accent: '#FF4B4B', body: 'Live webcam inference, session telemetry, alert timeline and log export. Full cockpit embedded below.', metrics: [['PORT', '8501'], ['FPS', 'LIVE'], ['CHARTS', 'REALTIME']], logo: 'STREAMLIT' },
 ];
 
 function Card({ data }) {
   return (
     <div style={{ flexShrink: 0, width: 'clamp(280px, 28vw, 380px)', marginRight: '24px' }}>
-      <div style={{
-        height: '480px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)',
-        padding: '36px 32px', position: 'relative', overflow: 'hidden'
-      }}>
+      <div style={{ height: '480px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', padding: '36px 32px', position: 'relative', overflow: 'hidden' }}>
         <p className="font-display" style={{ fontSize: '4rem', fontWeight: 700, color: 'rgba(255,255,255,0.04)', lineHeight: 1, marginBottom: '16px' }}>{data.num}</p>
         <span className="font-mono" style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: data.accent, border: `1px solid ${data.accent}44`, padding: '3px 8px', display: 'inline-block', marginBottom: '20px' }}>{data.logo}</span>
         <h3 className="font-display" style={{ fontSize: 'clamp(1.4rem, 2vw, 2rem)', fontWeight: 700, color: '#F5F5F5', marginBottom: '6px', lineHeight: 1.1 }}>{data.title}</h3>
@@ -57,55 +38,44 @@ function Card({ data }) {
 }
 
 export default function TechCarousel() {
-  const containerRef = useRef(null);
-  const trackRef = useRef(null);
+  const sectionRef = useRef(null);
+  const trackRef   = useRef(null);
 
   useEffect(() => {
-    let ctx; 
-
-    async function init() {
-      const { gsap } = await import('gsap');
-      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-      gsap.registerPlugin(ScrollTrigger);
-
+    let ctx = gsap.context(() => {
       const track = trackRef.current;
-      const container = containerRef.current;
-      if (!track || !container) return;
+      
+      const getScrollAmount = () => {
+        const trackWidth = track.scrollWidth;
+        return -(trackWidth - window.innerWidth + window.innerWidth * 0.1); 
+      };
 
-      ctx = gsap.context(() => {
-        // Calculate exact horizontal movement distance dynamically
-        const getDistance = () => {
-          const dist = track.scrollWidth - window.innerWidth + 80;
-          return dist > 0 ? dist : 0;
-        };
+      const tween = gsap.to(track, {
+        x: getScrollAmount,
+        ease: 'none'
+      });
 
-        gsap.to(track, {
-          x: () => -getDistance(),
-          ease: 'none',
-          scrollTrigger: {
-            trigger: container,
-            start: 'top top',
-            end: () => `+=${getDistance()}`, // Scroll duration perfectly maps 1:1 to horizontal distance (NO BLACK VOID!)
-            pin: true,
-            scrub: 1,
-            invalidateOnRefresh: true, // Auto-recalculates if window is resized
-          },
-        });
-      }, containerRef);
-    }
-    
-    init();
-    return () => ctx && ctx.revert(); 
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top top',
+        end: () => `+=${track.scrollWidth}`, // Scroll duration matches track width
+        pin: true,
+        animation: tween,
+        scrub: 1,
+        invalidateOnRefresh: true,
+      });
+
+    }, sectionRef);
+
+    return () => ctx.revert();
   }, []);
 
   return (
-    <section id="tech" style={{ background: '#050505' }}>
+    <section ref={sectionRef} id="tech" style={{ height: '100vh', width: '100vw', background: '#050505', position: 'relative', overflow: 'hidden' }}>
       
-      {/* We pin this wrapper. Flexbox centering is REMOVED to prevent card squishing. Using rigid padding-top instead. */}
-      <div ref={containerRef} style={{ height: '100vh', width: '100%', overflow: 'hidden', paddingTop: '15vh', position: 'relative' }}>
+      <div style={{ height: '100vh', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '8vh' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px', flexShrink: 0 }}>
           <div>
             <p className="section-label" style={{ marginBottom: '8px' }}>/ 03 TECHNOLOGY</p>
             <h2 className="font-display" style={{ fontSize: 'clamp(2rem, 5vw, 5rem)', fontWeight: 700, letterSpacing: '-0.02em', color: '#F5F5F5', lineHeight: 1 }}>THE STACK</h2>
@@ -113,17 +83,14 @@ export default function TechCarousel() {
           <p className="section-label" style={{ opacity: 0.5 }}>SCROLL →</p>
         </div>
 
-        {/* Carousel Track */}
-        <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)' }}>
-          <div ref={trackRef} style={{ display: 'flex', width: 'max-content', willChange: 'transform' }}>
+        <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)', flexShrink: 0 }}>
+          <div ref={trackRef} style={{ display: 'flex', alignItems: 'flex-start', width: 'max-content', willChange: 'transform' }}>
             {CARDS.map((card) => <Card key={card.id} data={card} />)}
-            {/* Small invisible spacer so the last card doesn't stop dead against the screen edge */}
-            <div style={{ width: '10vw' }} /> 
+            <div style={{ flexShrink: 0, width: '10vw' }} />
           </div>
         </div>
 
       </div>
-      
     </section>
   );
 }
