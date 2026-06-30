@@ -57,7 +57,7 @@ function Card({ data }) {
 }
 
 export default function TechCarousel() {
-  const sectionRef = useRef(null);
+  const containerRef = useRef(null);
   const trackRef = useRef(null);
 
   useEffect(() => {
@@ -69,29 +69,29 @@ export default function TechCarousel() {
       gsap.registerPlugin(ScrollTrigger);
 
       const track = trackRef.current;
-      const section = sectionRef.current;
-      if (!track || !section) return;
+      const container = containerRef.current;
+      if (!track || !container) return;
 
       ctx = gsap.context(() => {
-        // Dynamically calculate the exact width we need to move
-        const getScrollAmount = () => {
-          let trackWidth = track.scrollWidth;
-          return -(trackWidth - window.innerWidth + 80); // 80px buffer
+        // Calculate exact horizontal movement distance dynamically
+        const getDistance = () => {
+          const dist = track.scrollWidth - window.innerWidth + 80;
+          return dist > 0 ? dist : 0;
         };
 
         gsap.to(track, {
-          x: getScrollAmount,
+          x: () => -getDistance(),
           ease: 'none',
           scrollTrigger: {
-            trigger: section,
+            trigger: container,
             start: 'top top',
-            end: () => `+=${track.scrollWidth - window.innerWidth + 80}`, // Exact end point removes the black void
+            end: () => `+=${getDistance()}`, // Scroll duration perfectly maps 1:1 to horizontal distance (NO BLACK VOID!)
             pin: true,
             scrub: 1,
-            invalidateOnRefresh: true, // Recalculates sizes instantly if window resizes
+            invalidateOnRefresh: true, // Auto-recalculates if window is resized
           },
         });
-      }, sectionRef);
+      }, containerRef);
     }
     
     init();
@@ -99,11 +99,13 @@ export default function TechCarousel() {
   }, []);
 
   return (
-    // Removed 300vh and sticky. GSAP pin handles it dynamically now.
-    <section ref={sectionRef} id="tech" style={{ background: '#050505', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <section id="tech" style={{ background: '#050505' }}>
+      
+      {/* We pin this wrapper. Flexbox centering is REMOVED to prevent card squishing. Using rigid padding-top instead. */}
+      <div ref={containerRef} style={{ height: '100vh', width: '100%', overflow: 'hidden', paddingTop: '15vh', position: 'relative' }}>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '48px', flexShrink: 0 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', padding: '0 clamp(24px, 6vw, 80px)', marginBottom: '8vh' }}>
           <div>
             <p className="section-label" style={{ marginBottom: '8px' }}>/ 03 TECHNOLOGY</p>
             <h2 className="font-display" style={{ fontSize: 'clamp(2rem, 5vw, 5rem)', fontWeight: 700, letterSpacing: '-0.02em', color: '#F5F5F5', lineHeight: 1 }}>THE STACK</h2>
@@ -111,16 +113,17 @@ export default function TechCarousel() {
           <p className="section-label" style={{ opacity: 0.5 }}>SCROLL →</p>
         </div>
 
-        <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)', flexShrink: 0 }}>
-          {/* CRITICAL FIX: Added width: 'max-content' here so Cards 1 & 2 don't get squished off-screen */}
-          <div ref={trackRef} style={{ display: 'flex', alignItems: 'flex-start', width: 'max-content', willChange: 'transform' }}>
+        {/* Carousel Track */}
+        <div style={{ paddingLeft: 'clamp(24px, 6vw, 80px)' }}>
+          <div ref={trackRef} style={{ display: 'flex', width: 'max-content', willChange: 'transform' }}>
             {CARDS.map((card) => <Card key={card.id} data={card} />)}
-            {/* Reduced spacer width to stop empty scrolling at the end */}
-            <div style={{ flexShrink: 0, width: '10vw' }} /> 
+            {/* Small invisible spacer so the last card doesn't stop dead against the screen edge */}
+            <div style={{ width: '10vw' }} /> 
           </div>
         </div>
 
       </div>
+      
     </section>
   );
 }
