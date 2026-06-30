@@ -9,21 +9,38 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from pathlib import Path
 
+# Resolve logs directory relative to THIS file so it's always
+# dashboard/logs/ regardless of where `streamlit run` is invoked from.
+LOGS_DIR = Path(__file__).resolve().parent.parent / "logs"
+
+
+def _ensure_logs_dir():
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def render_cockpit_top(backend_ok: bool):
     # ── Init session state ────────────────────────────────────────────────────
-    if "run_live" not in st.session_state:
-        st.session_state.run_live = False
-    if "fps_target" not in st.session_state:
-        st.session_state.fps_target = 5
+    for key, default in [
+        ("run_live", False),
+        ("fps_target", 5),
+        ("session_data", []),
+        ("session_start", None),
+        ("cap", None),
+        ("current_session_file", None),
+    ]:
+        if key not in st.session_state:
+            st.session_state[key] = default
 
     st.markdown("<div class='section-label'>COCKPIT · LIVE IN-CABIN VIEW</div>", unsafe_allow_html=True)
     st.markdown("<div class='cockpit-shell'>", unsafe_allow_html=True)
 
     hc1, hc2, hc3 = st.columns([1.2, 1.2, 1.4])
-    with hc1: st.markdown("<div class='hud-chip'>HUD MODE · <span>DRIVER</span></div>", unsafe_allow_html=True)
-    with hc2: st.markdown("<div class='hud-chip'>ENGINE · <span>ON-DEVICE</span></div>", unsafe_allow_html=True)
-    with hc3: st.markdown("<div class='hud-chip'>LATENCY · <span>&lt; 25 MS</span></div>", unsafe_allow_html=True)
+    with hc1:
+        st.markdown("<div class='hud-chip'>HUD MODE · <span>DRIVER</span></div>", unsafe_allow_html=True)
+    with hc2:
+        st.markdown("<div class='hud-chip'>ENGINE · <span>ON-DEVICE</span></div>", unsafe_allow_html=True)
+    with hc3:
+        st.markdown("<div class='hud-chip'>LATENCY · <span>&lt; 25 MS</span></div>", unsafe_allow_html=True)
 
     st.markdown("<div class='hud-line'></div>", unsafe_allow_html=True)
 
@@ -35,26 +52,24 @@ def render_cockpit_top(backend_ok: bool):
             """
             <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
             <style>
-                model-viewer { width: 100%; height: 320px; background-color: transparent; outline: none; cursor: grab; }
+                model-viewer {
+                    width: 100%; height: 320px;
+                    background-color: transparent;
+                    outline: none; cursor: grab;
+                }
                 model-viewer:active { cursor: grabbing; }
             </style>
             <model-viewer
                 id="supercar"
                 src="http://localhost:3000/models/lamborghini_centenario_roadster_sdc.glb"
-                camera-controls
-                disable-pan
-                disable-zoom
-                auto-rotate
+                camera-controls disable-pan disable-zoom auto-rotate
                 rotation-per-second="20deg"
-                shadow-intensity="1"
-                exposure="0.8"
+                shadow-intensity="1" exposure="0.8"
                 interaction-prompt="none">
             </model-viewer>
             <script>
                 const model = document.querySelector('#supercar');
-                let doorsOpen = false;
-                let animFrame = null;
-                let targetTime = 0;
+                let doorsOpen = false, animFrame = null, targetTime = 0;
                 model.addEventListener('load', () => { model.pause(); model.currentTime = 0; });
                 function animateDoors() {
                     if (!model.duration) return;
@@ -87,10 +102,15 @@ def render_cockpit_top(backend_ok: bool):
 
         ctrl_a, ctrl_b = st.columns([1, 1])
         with ctrl_a:
-            # Use on_change callback so the toggle flip is committed to session_state
-            # BEFORE the next script rerun reads it.
             def _toggle_inference():
                 st.session_state.run_live = not st.session_state.run_live
+                # Start a fresh session file when toggling ON
+                if st.session_state.run_live:
+                    _ensure_logs_dir()
+                    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    st.session_state.current_session_file = LOGS_DIR / f"session_{ts}.csv"
+                    st.session_state.session_start = time.time()
+                    st.session_state.session_data = []
 
             st.toggle(
                 "Start Live Inference",
@@ -108,7 +128,14 @@ def render_cockpit_top(backend_ok: bool):
     return screen_placeholder, st.session_state.run_live, st.session_state.fps_target
 
 
-def run_inference_loop(backend_ok, backend_url, screen_placeholder, run_live, fps_target, ph_list):
+def run_inference_loop(
+    backend_ok: bool,
+    backend_url: str,
+    screen_placeholder,
+    run_live: bool,
+    fps_target: int,
+    ph_list: list,
+):
     state_ph, alert_ph, drowsy_ph, dist_ph, lat_ph = ph_list
 
     STATE_LABELS = {
@@ -120,7 +147,7 @@ def run_inference_loop(backend_ok, backend_url, screen_placeholder, run_live, fp
     }
     ALERT_ICONS = {0: "🟢", 1: "🟡", 2: "🔴"}
 
-    # ── Idle state ────────────────────────────────────────────────────────────
+    # ── Idle state ─────────────────────────────────────────────────────────────
     if not run_live:
         screen_placeholder.info("Toggle **Start Live Inference** above to begin streaming.")
         for ph in ph_list:
@@ -128,39 +155,36 @@ def run_inference_loop(backend_ok, backend_url, screen_placeholder, run_live, fp
         return
 
     if not backend_ok:
-        screen_placeholder.error("Backend offline — start it with `cd backend && uvicorn main:app --reload`")
+        screen_placeholder.error(
+            "Backend offline — start it with `cd backend && uvicorn main:app --reload`"
+        )
         return
 
-    # ── Live inference loop ────────────────────────────────────────────────────
-    # Open capture once; Streamlit re-executes this function every ~rerun cycle
-    # so we cache the VideoCapture object in session_state to avoid re-opening.
-    if "cap" not in st.session_state or st.session_state.cap is None:
+    # ── Open / reuse VideoCapture ───────────────────────────────────────────────
+    if st.session_state.get("cap") is None:
         cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             screen_placeholder.error(
                 "❌ Could not open webcam.\n\n"
-                "**macOS:** System Settings → Privacy & Security → Camera → allow Terminal / your browser.\n\n"
+                "**macOS:** System Settings → Privacy & Security → Camera → allow Terminal.\n\n"
                 "**Linux/Windows:** Make sure no other app is holding the camera."
             )
             st.session_state.run_live = False
             return
         st.session_state.cap = cap
-    else:
-        cap = st.session_state.cap
+    cap = st.session_state.cap
 
-    session_data = st.session_state.get("session_data", [])
-    session_start = st.session_state.get("session_start", time.time())
-    st.session_state.session_start = session_start
+    session_data: list = st.session_state.session_data
+    session_start: float = st.session_state.session_start or time.time()
+    session_file: Path | None = st.session_state.current_session_file
 
-    frame_interval = 1.0 / fps_target
+    frame_interval = 1.0 / max(fps_target, 1)
     stop_requested = False
 
-    # Run a fixed burst of frames per Streamlit rerun so we don't block the
-    # event loop indefinitely (Streamlit will auto-rerun via st.rerun() below).
+    # Burst a fixed number of frames per Streamlit rerun to avoid blocking.
     FRAMES_PER_BURST = max(1, fps_target * 2)
 
     for _ in range(FRAMES_PER_BURST):
-        # Check if user toggled off mid-burst
         if not st.session_state.run_live:
             stop_requested = True
             break
@@ -171,65 +195,102 @@ def run_inference_loop(backend_ok, backend_url, screen_placeholder, run_live, fp
             continue
 
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        screen_placeholder.image(frame_rgb, channels="RGB", use_column_width=True)
+        # ✅ use_container_width replaces deprecated use_column_width
+        screen_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
 
         _, buf = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
         b64 = base64.b64encode(buf.tobytes()).decode()
 
+        row = None
         try:
             resp = requests.post(f"{backend_url}/infer", json={"frame": b64}, timeout=3)
             if resp.status_code == 200:
                 data = resp.json()
                 d_state = data.get("driver_state", "unknown")
                 a_level = data.get("alert_level", 0)
+                latency_ms = (time.time() - t0) * 1000
 
                 state_ph.metric("Driver State", STATE_LABELS.get(d_state, d_state))
                 alert_ph.metric("Alert Level", f"{ALERT_ICONS.get(a_level, '')} {a_level}/2")
-                drowsy_ph.metric("Drowsiness", data.get("drowsiness", "?"), f"{data.get('drowsiness_confidence', 0):.0%}")
-                dist_ph.metric("Distraction", data.get("distraction", "?"), f"{data.get('distraction_confidence', 0):.0%}")
-                lat_ph.metric("Latency", f"{(time.time() - t0) * 1000:.0f} ms")
+                drowsy_ph.metric(
+                    "Drowsiness",
+                    data.get("drowsiness", "?"),
+                    f"{data.get('drowsiness_confidence', 0):.0%}",
+                )
+                dist_ph.metric(
+                    "Distraction",
+                    data.get("distraction", "?"),
+                    f"{data.get('distraction_confidence', 0):.0%}",
+                )
+                lat_ph.metric("Latency", f"{latency_ms:.0f} ms")
 
-                session_data.append({
-                    "elapsed_s": t0 - session_start,
-                    "label": d_state,
-                    "ear": (
-                        data.get("drowsiness_confidence", 0)
-                        if data.get("drowsiness") == "drowsy"
-                        else 1 - data.get("drowsiness_confidence", 0)
-                    ),
-                })
+                row = {
+                    "timestamp": datetime.now().isoformat(timespec="milliseconds"),
+                    "elapsed_s": round(t0 - session_start, 3),
+                    "driver_state": d_state,
+                    "alert_level": a_level,
+                    "drowsiness": data.get("drowsiness", ""),
+                    "drowsiness_confidence": round(data.get("drowsiness_confidence", 0), 4),
+                    "distraction": data.get("distraction", ""),
+                    "distraction_confidence": round(data.get("distraction_confidence", 0), 4),
+                    "latency_ms": round(latency_ms, 1),
+                    # head pose angles if backend provides them
+                    "yaw": data.get("yaw", None),
+                    "pitch": data.get("pitch", None),
+                    "roll": data.get("roll", None),
+                }
+                session_data.append(row)
+
+                # ── Live-append each row to CSV immediately ────────────────────
+                if session_file is not None:
+                    _ensure_logs_dir()
+                    write_header = not session_file.exists()
+                    pd.DataFrame([row]).to_csv(
+                        session_file,
+                        mode="a",
+                        header=write_header,
+                        index=False,
+                    )
         except Exception:
             pass
 
         elapsed = time.time() - t0
-        time.sleep(max(0, frame_interval - elapsed))
+        time.sleep(max(0.0, frame_interval - elapsed))
 
     st.session_state.session_data = session_data
 
-    # ── Session ended — save logs ─────────────────────────────────────────────
+    # ── Session ended — write final summary ────────────────────────────────────
     if stop_requested or not st.session_state.run_live:
         cap.release()
         st.session_state.cap = None
 
-        if session_data:
-            logs_dir = Path("logs")
-            logs_dir.mkdir(exist_ok=True)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if session_data and session_file is not None:
             df = pd.DataFrame(session_data)
-            df.to_csv(logs_dir / f"session_{timestamp}.csv", index=False)
+            # Overwrite with fully-typed, clean CSV
+            df.to_csv(session_file, index=False)
 
             summary = {
-                "duration_sec": float(df["elapsed_s"].iloc[-1]) if not df.empty else 0,
-                "attentive_pct": float((df["label"] == "safe").mean() * 100) if not df.empty else 0,
-                "alert_count": int(len(df[df["label"] != "safe"])),
+                "session_file": session_file.name,
+                "started_at": datetime.fromtimestamp(session_start).isoformat(),
+                "ended_at": datetime.now().isoformat(),
+                "duration_sec": round(float(df["elapsed_s"].iloc[-1]), 2) if not df.empty else 0,
+                "attentive_pct": round(
+                    float((df["driver_state"] == "safe").mean() * 100), 2
+                ) if not df.empty else 0,
+                "alert_count": int(len(df[df["driver_state"] != "safe"])),
                 "total_frames": len(df),
+                "mean_latency_ms": round(float(df["latency_ms"].mean()), 1) if not df.empty else 0,
             }
-            with open(logs_dir / f"session_{timestamp}_summary.json", "w") as f:
-                json.dump(summary, f)
+            summary_path = session_file.with_suffix("").parent / (
+                session_file.stem + "_summary.json"
+            )
+            with open(summary_path, "w") as f:
+                json.dump(summary, f, indent=2)
 
         st.session_state.session_data = []
+        st.session_state.current_session_file = None
         st.rerun()
         return
 
-    # ── Keep looping — trigger next burst ─────────────────────────────────────
+    # ── Keep looping — trigger next burst ──────────────────────────────────────
     st.rerun()
