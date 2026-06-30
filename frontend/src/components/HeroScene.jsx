@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, Environment, ContactShadows, PerspectiveCamera } from '@react-three/drei';
+import { useGLTF, Environment, ContactShadows, PerspectiveCamera, useAnimations } from '@react-three/drei';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import * as THREE from 'three';
@@ -10,11 +10,11 @@ import HudOverlay from './HudOverlay';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Camera positions: outside → approach → hover at window
+// The Cinematic Path: Outside → Approaching Door → Inside Driver's Seat
 const CAM_POSITIONS = [
-  { pos: [7,  2.0, 10],  target: [0, 0.5,  0] },    // 0% – wide outside shot
-  { pos: [3,  1.2,  5],  target: [0, 0.5,  0] },    // 50% – approaching
-  { pos: [1.2, 0.8, 2],  target: [-0.5, 0.5, -1] }  // 100% – hovering at the driver window
+  { pos: [6.0, 2.0, 7.0],    target: [0, 0.5, 0] },        // 0%   - Wide outside shot
+  { pos: [2.5, 1.2, 2.5],    target: [0, 0.6, -0.5] },     // 50%  - Approaching the opening door
+  { pos: [0.35, 0.9, 0.2],   target: [0.35, 0.7, -1.0] }   // 100% - Settled inside cabin, looking at dashboard
 ];
 
 function lerp(a, b, t) { return a + (b - a) * t; }
@@ -27,12 +27,15 @@ function lerpVec3(from, to, t) {
 }
 
 function getCamAtProgress(p) {
+  // CRITICAL FIX: Clamp progress between 0 and 1.
+  // macOS rubber-band scrolling causes p to go negative, which crashed the array index!
+  const safeP = Math.max(0, Math.min(1, p));
   const count = CAM_POSITIONS.length - 1;
-  const segment = Math.min(p * count, count - 0.0001);
+  const segment = Math.min(safeP * count, count - 0.00001);
   const idx = Math.floor(segment);
   const t = segment - idx;
   const from = CAM_POSITIONS[idx];
-  const to   = CAM_POSITIONS[idx + 1] || CAM_POSITIONS[idx];
+  const to   = CAM_POSITIONS[idx + 1];
   return {
     pos:    lerpVec3(from.pos,    to.pos,    t),
     target: lerpVec3(from.target, to.target, t),
@@ -56,14 +59,15 @@ function CameraRig({ progressRef }) {
   return null;
 }
 
-// Load and display the Lambo GLB
-function LamborghiniModel() {
-  const { scene } = useGLTF('/models/lamborghini_centenario_roadster_sdc.glb');
+// Load the Lambo GLB and scrub its animations
+function LamborghiniModel({ progressRef }) {
   const groupRef = useRef();
+  const { scene, animations } = useGLTF('/models/lamborghini_centenario_roadster_sdc.glb');
+  const { actions } = useAnimations(animations, groupRef);
 
   useEffect(() => {
     if (!scene) return;
-    // Enhance materials
+    // Enhance materials for realism
     scene.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -74,6 +78,23 @@ function LamborghiniModel() {
       }
     });
   }, [scene]);
+
+  useFrame(() => {
+    // Scrub the door opening animation based on scroll progress!
+    if (actions && Object.keys(actions).length > 0) {
+      const actionName = Object.keys(actions)[0]; // Target the built-in animation
+      const action = actions[actionName];
+      if (action) {
+        action.play();
+        action.paused = true; // We manually control the timeline via scroll
+        
+        const p = Math.max(0, Math.min(1, progressRef.current));
+        // Calculate door opening: fully opens during the first 60% of the scroll
+        const animProgress = Math.min(p / 0.6, 1.0);
+        action.time = animProgress * action.getClip().duration;
+      }
+    }
+  });
 
   return <primitive ref={groupRef} object={scene} scale={1} position={[0, -0.5, 0]} />
 }
@@ -96,7 +117,7 @@ function Scene({ progressRef }) {
 
       {/* Car model */}
       <Suspense fallback={null}>
-        <LamborghiniModel />
+        <LamborghiniModel progressRef={progressRef} />
       </Suspense>
 
       {/* Ground shadow */}
@@ -119,73 +140,70 @@ export default function HeroScene() {
   const subtitleRef = useRef(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Parallax on FALCON title (slower than scroll)
-      gsap.to(titleRef.current, {
-        yPercent: -30,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true,
-        },
-      });
+    let ctx;
+    async function init() {
+      const { gsap } = await import('gsap');
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      gsap.registerPlugin(ScrollTrigger);
 
-      // Drive camera progress 0→1 through scroll
-      const proxy = { p: 0 };
-      gsap.to(proxy, {
-        p: 1,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: 1.5,
-          onUpdate: (self) => {
-            progressRef.current = self.progress;
+      ctx = gsap.context(() => {
+        // Parallax on FALCON title
+        gsap.to(titleRef.current, {
+          yPercent: -30,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
           },
-        },
-      });
+        });
 
-      // HUD assembles when camera is inside (progress > 0.75)
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: '75% top',
-        end: 'bottom top',
-        onEnter: () => {
-          if (!hudRef.current) return;
-          gsap.to(hudRef.current.querySelectorAll('.hud-corner'), {
-            opacity: 1,
-            duration: 0.4,
-            stagger: 0.08,
-            ease: 'expo.out',
-          });
-          gsap.to(hudRef.current.querySelectorAll('.hud-panel'), {
-            x: 0,
-            opacity: 1,
-            duration: 0.6,
-            stagger: 0.1,
-            ease: 'expo.out',
-          });
-          gsap.to(hudRef.current.querySelectorAll('.hud-mesh-line'), {
-            scaleX: 1,
-            opacity: 0.6,
-            duration: 0.5,
-            stagger: 0.02,
-            ease: 'expo.out',
-          });
-        },
-        onLeaveBack: () => {
-          if (!hudRef.current) return;
-          gsap.to(hudRef.current.querySelectorAll('.hud-corner, .hud-panel, .hud-mesh-line'), {
-            opacity: 0, duration: 0.3,
-          });
-        },
-      });
-    }, sectionRef);
+        // Drive camera & animation progress 0→1
+        const proxy = { p: 0 };
+        gsap.to(proxy, {
+          p: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1.5,
+            onUpdate: (self) => {
+              progressRef.current = self.progress;
+            },
+          },
+        });
 
-    return () => ctx.revert();
+        // HUD assembles when camera lands inside the cabin (>75% scroll)
+        ScrollTrigger.create({
+          trigger: sectionRef.current,
+          start: '75% top',
+          end: 'bottom top',
+          onEnter: () => {
+            if (!hudRef.current) return;
+            gsap.to(hudRef.current.querySelectorAll('.hud-corner'), {
+              opacity: 1, duration: 0.4, stagger: 0.08, ease: 'expo.out',
+            });
+            gsap.to(hudRef.current.querySelectorAll('.hud-panel'), {
+              x: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'expo.out',
+            });
+            gsap.to(hudRef.current.querySelectorAll('.hud-mesh-line'), {
+              scaleX: 1, opacity: 0.6, duration: 0.5, stagger: 0.02, ease: 'expo.out',
+            });
+          },
+          onLeaveBack: () => {
+            if (!hudRef.current) return;
+            gsap.to(hudRef.current.querySelectorAll('.hud-corner, .hud-panel, .hud-mesh-line'), {
+              opacity: 0, duration: 0.3,
+            });
+          },
+        });
+      }, sectionRef);
+    }
+    
+    init();
+    return () => ctx && ctx.revert();
   }, []);
 
   return (
@@ -194,7 +212,6 @@ export default function HeroScene() {
       id="system"
       style={{ height: '250vh', position: 'relative' }}
     >
-      {/* Sticky wrapper — everything inside sticks while user scrolls */}
       <div
         style={{
           position: 'sticky',
@@ -205,7 +222,6 @@ export default function HeroScene() {
           background: '#050505',
         }}
       >
-        {/* FALCON ghost title — parallax slower than scroll */}
         <div
           ref={titleRef}
           aria-hidden="true"
@@ -235,10 +251,9 @@ export default function HeroScene() {
           </span>
         </div>
 
-        {/* Three.js Canvas */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
           <Canvas
-            dpr={1}  /* <-- This single change fixes 90% of the lag */
+            dpr={1}
             gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }}
             shadows
           >
@@ -246,7 +261,6 @@ export default function HeroScene() {
           </Canvas>
         </div>
 
-        {/* HUD Overlay — AR wireframe on top of canvas */}
         <div
           ref={hudRef}
           style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none' }}
@@ -254,14 +268,11 @@ export default function HeroScene() {
           <HudOverlay />
         </div>
 
-        {/* Bottom labels */}
         <div
           ref={subtitleRef}
           style={{
             position: 'absolute',
-            bottom: '40px',
-            left: '40px',
-            right: '40px',
+            bottom: '40px', left: '40px', right: '40px',
             zIndex: 4,
             display: 'flex',
             justifyContent: 'space-between',
@@ -279,7 +290,6 @@ export default function HeroScene() {
           </div>
         </div>
 
-        {/* Scroll indicator */}
         <div style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', zIndex: 4 }}>
           <div
             style={{
@@ -301,5 +311,4 @@ export default function HeroScene() {
   );
 }
 
-// Preload the GLB
 useGLTF.preload('/models/lamborghini_centenario_roadster_sdc.glb');
