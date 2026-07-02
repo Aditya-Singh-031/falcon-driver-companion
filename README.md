@@ -8,7 +8,7 @@ Falcon is an on-device AI system that monitors driver state in real time — det
 
 ---
 
-## [![YouTube](https://cdn3.emoji.gg/emojis/YouTube.png)](https://emoji.gg/emoji/YouTube) Youtube Link : https://youtu.be/KkOKo12p0D8?si=1KffNjz3H3-7KvdP
+## [<img src="https://cdn3.emoji.gg/emojis/YouTube.png" alt="YouTube" width="20" height="20" />](https://emoji.gg/emoji/YouTube) Youtube Link : https://youtu.be/KkOKo12p0D8?si=1KffNjz3H3-7KvdP
 
 ## 🚀 Features
 
