@@ -200,4 +200,5 @@ __pycache__/
 /frontend/node_modules
 
 *.glb
-*.mov
+
+Sol_Innovent.mov
